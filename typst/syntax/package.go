@@ -9,7 +9,8 @@ import (
 
 	"github.com/mewmew/typast/internal/option"
 	"github.com/mewmew/typast/internal/scanner"
-	"github.com/mewmew/typast/internal/toml"
+	internaltoml "github.com/mewmew/typast/internal/toml"
+	toml "github.com/pelletier/go-toml/v2"
 	"github.com/pkg/errors"
 )
 
@@ -25,13 +26,22 @@ type UnknownFields map[string]IgnoredAny
 // The `unknown_fields` contains fields which were found but not expected.
 type PackageManifest struct {
 	// Details about the package itself.
-	pkg *PackageInfo // package
+	Pkg *PackageInfo `toml:"package"`
 	// Details about the template, if the package is one.
 	template option.Option[*TemplateInfo]
 	// The tools section for third-party configuration.
 	tool *ToolInfo
 	// All parsed but unknown fields, this can be used for validation.
 	unknown_fields UnknownFields
+}
+
+func ParsePackageManifestFromToml(content string) (*PackageManifest, error) {
+	manifest := &PackageManifest{}
+	err := toml.Unmarshal([]byte(content), manifest)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return manifest, nil
 }
 
 // The `[tool]` key in the manifest. This field can be used to retrieve
@@ -74,7 +84,7 @@ type PackageManifest struct {
 // ```
 type ToolInfo struct {
 	// Any fields parsed in the tool section.
-	sections map[string]toml.Table
+	sections map[string]internaltoml.Table
 }
 
 // The `[template]` key in the manifest.
@@ -99,11 +109,11 @@ type TemplateInfo struct {
 // The `unknown_fields` contains fields which were found but not expected.
 type PackageInfo struct {
 	// The name of the package within its namespace.
-	name string
+	Name string `toml:"name"`
 	// The package's version.
-	version PackageVersion
+	Version PackageVersion `toml:"version"`
 	// The path of the entrypoint into the package.
-	entrypoint string
+	Entrypoint string `toml:"entrypoint"`
 	// A list of the package's authors.
 	authors []string
 	//  The package's license.
@@ -138,10 +148,10 @@ type PackageInfo struct {
 // new
 func NewPackageManifest(pkg *PackageInfo) *PackageManifest {
 	return &PackageManifest{
-		pkg:      pkg,
+		Pkg:      pkg,
 		template: option.None[*TemplateInfo](),
 		tool: &ToolInfo{
-			sections: make(map[string]toml.Table),
+			sections: make(map[string]internaltoml.Table),
 		},
 		unknown_fields: make(UnknownFields),
 	}
@@ -149,21 +159,21 @@ func NewPackageManifest(pkg *PackageInfo) *PackageManifest {
 
 // Ensure that this manifest is indeed for the specified package.
 func (manifest *PackageManifest) validate(spec *PackageSpec) error {
-	if manifest.pkg.name != spec.name {
+	if manifest.Pkg.Name != spec.name {
 		return errors.Errorf(
 			"package manifest contains mismatched name `%v`",
-			manifest.pkg.name,
+			manifest.Pkg.Name,
 		)
 	}
 
-	if manifest.pkg.version != spec.version {
+	if manifest.Pkg.Version != spec.version {
 		return errors.Errorf(
 			"package manifest contains mismatched version %v",
-			manifest.pkg.version,
+			manifest.Pkg.Version,
 		)
 	}
 
-	if required, ok := manifest.pkg.compiler.Get(); ok {
+	if required, ok := manifest.Pkg.compiler.Get(); ok {
 		current := CurrentCompilerVersion()
 		if !current.matches_ge(required) {
 			return errors.Errorf(
@@ -206,9 +216,9 @@ func NewPackageInfo(
 	entrypoint string,
 ) *PackageInfo {
 	return &PackageInfo{
-		name:           name,
-		version:        version,
-		entrypoint:     entrypoint,
+		Name:           name,
+		Version:        version,
+		Entrypoint:     entrypoint,
 		authors:        nil,
 		categories:     nil,
 		compiler:       option.None[*VersionBound](),
@@ -356,6 +366,15 @@ type PackageVersion struct {
 	minor uint32
 	// The package's patch version.
 	patch uint32
+}
+
+func (v *PackageVersion) UnmarshalText(text []byte) error {
+	version, err := ParsePackageVersion(string(text))
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	*v = version
+	return nil
 }
 
 // FromStr for PackageVersion
@@ -532,12 +551,12 @@ func ParseVersionBound(str string) (*VersionBound, error) {
 
 func (version *VersionBound) String() string {
 	out := &strings.Builder{}
-	fmt.Fprintf(out, "%s", version.major)
+	fmt.Fprintf(out, "%d", version.major)
 	if minor, ok := version.minor.Get(); ok {
-		fmt.Fprintf(out, "%s", minor)
+		fmt.Fprintf(out, "%d", minor)
 	}
 	if patch, ok := version.patch.Get(); ok {
-		fmt.Fprintf(out, "%s", patch)
+		fmt.Fprintf(out, "%d", patch)
 	}
 	return out.String()
 }
