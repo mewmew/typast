@@ -28,6 +28,7 @@ func (s *Scanner) EatIf(want rune) bool {
 	c, n := s.next()
 	if c == want {
 		s.cur += n
+		s.skip()
 		return true
 	}
 	return false
@@ -54,6 +55,10 @@ func (s *Scanner) emit() string {
 	token := s.str[s.start:s.cur]
 	s.start = s.cur
 	return token
+}
+
+func (s *Scanner) skip() {
+	s.start = s.cur
 }
 
 func (s *Scanner) next() (rune, int) {

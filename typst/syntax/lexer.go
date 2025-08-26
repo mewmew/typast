@@ -1,7 +1,7 @@
 package syntax
 
 import (
-	"unicode"
+	"github.com/smasher164/xid"
 )
 
 // Whether a string is a valid Typst identifier.
@@ -12,11 +12,10 @@ import (
 //
 // [uax31]: http://www.unicode.org/reports/tr31/
 func is_ident(str string) bool {
-	rs := []rune(str)
-	if len(rs) == 0 {
+	if len(str) == 0 {
 		return false
 	}
-	for i, r := range rs {
+	for i, r := range str {
 		if i == 0 {
 			if !is_id_start(r) {
 				return false
@@ -41,9 +40,9 @@ func is_id_continue(c rune) bool {
 }
 
 func is_xid_start(r rune) bool {
-	return unicode.In(r, unicode.Other_ID_Start)
+	return xid.Start(r)
 }
 
 func is_xid_continue(r rune) bool {
-	return unicode.In(r, unicode.Other_ID_Continue)
+	return xid.Continue(r)
 }

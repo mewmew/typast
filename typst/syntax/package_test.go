@@ -62,6 +62,37 @@ entrypoint = "src/lib.typ"
 	}
 }
 
+func TestParsePackageSpec(t *testing.T) {
+	golden := []struct {
+		input string
+		want  PackageSpec
+	}{
+		{
+			input: "@preview/smartaref:0.1.0",
+			want: PackageSpec{
+				namespace: "preview",
+				name:      "smartaref",
+				version:   PackageVersion{major: 0, minor: 1, patch: 0},
+			},
+		},
+		{
+			input: "@local/foo:1.2.3",
+			want: PackageSpec{
+				namespace: "local",
+				name:      "foo",
+				version:   PackageVersion{major: 1, minor: 2, patch: 3},
+			},
+		},
+	}
+	for _, g := range golden {
+		_got := mustParsePackageSpec(g.input)
+		got := *_got
+		if g.want != got {
+			t.Errorf("package spec mismatch; expected %#v, got %#v", g.want, got)
+		}
+	}
+}
+
 // ### [ Utility functions ] ###################################################
 
 func mustParsePackageVersion(str string) PackageVersion {
@@ -86,4 +117,12 @@ func mustParsePackageManifestFromToml(content string) *PackageManifest {
 		panic(err)
 	}
 	return manifest
+}
+
+func mustParsePackageSpec(str string) *PackageSpec {
+	spec, err := ParsePackageSpec(str)
+	if err != nil {
+		panic(err)
+	}
+	return spec
 }

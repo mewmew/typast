@@ -5,4 +5,7 @@ go 1.24.6
 require (
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/pkg/errors v0.9.1
+	github.com/smasher164/xid v0.1.2
 )
+
+require golang.org/x/text v0.3.3 // indirect
