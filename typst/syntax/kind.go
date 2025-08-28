@@ -7,294 +7,294 @@ type SyntaxKind uint8
 
 const (
 	// The end of token stream.
-	End SyntaxKind = iota + 1
+	SyntaxKindEnd SyntaxKind = iota + 1
 	// An invalid sequence of characters.
-	Error
+	SyntaxKindError
 
 	// A shebang: `#! ...`
-	Shebang
+	SyntaxKindShebang
 	// A line comment: `// ...`.
-	LineComment
+	SyntaxKindLineComment
 	// A block comment: `/* ... */`.
-	BlockComment
+	SyntaxKindBlockComment
 
 	// The contents of a file or content block.
-	Markup
+	SyntaxKindMarkup
 	// Plain text without markup.
-	Text
+	SyntaxKindText
 	// Whitespace. Contains at most one newline in markup, as more indicate a
 	// paragraph break.
-	Space
+	SyntaxKindSpace
 	// A forced line break: `\`.
-	Linebreak
+	SyntaxKindLinebreak
 	// A paragraph break, indicated by one or multiple blank lines.
-	Parbreak
+	SyntaxKindParbreak
 	// An escape sequence: `\#`, `\u{1F5FA}`.
-	Escape
+	SyntaxKindEscape
 	// A shorthand for a unicode codepoint. For example, `~` for non-breaking
 	// space or `-?` for a soft hyphen.
-	Shorthand
+	SyntaxKindShorthand
 	// A smart quote: `'` or `"`.
-	SmartQuote
+	SyntaxKindSmartQuote
 	// Strong content: `*Strong*`.
-	Strong
+	SyntaxKindStrong
 	// Emphasized content: `_Emphasized_`.
-	Emph
+	SyntaxKindEmph
 	// Raw text with optional syntax highlighting: `` `...` ``.
-	Raw
+	SyntaxKindRaw
 	// A language tag at the start of raw text: ``typ ``.
-	RawLang
+	SyntaxKindRawLang
 	// A raw delimiter consisting of 1 or 3+ backticks: `` ` ``.
-	RawDelim
+	SyntaxKindRawDelim
 	// A sequence of whitespace to ignore in a raw text: `    `.
-	RawTrimmed
+	SyntaxKindRawTrimmed
 	// A hyperlink: `https://typst.org`.
-	Link
+	SyntaxKindLink
 	// A label: `<intro>`.
-	Label
+	SyntaxKindLabel
 	// A reference: `@target`, `@target[..]`.
-	Ref
+	SyntaxKindRef
 	// Introduces a reference: `@target`.
-	RefMarker
+	SyntaxKindRefMarker
 	// A section heading: `= Introduction`.
-	Heading
+	SyntaxKindHeading
 	// Introduces a section heading: `=`, `==`, ...
-	HeadingMarker
+	SyntaxKindHeadingMarker
 	// An item in a bullet list: `- ...`.
-	ListItem
+	SyntaxKindListItem
 	// Introduces a list item: `-`.
-	ListMarker
+	SyntaxKindListMarker
 	// An item in an enumeration (numbered list): `+ ...` or `1. ...`.
-	EnumItem
+	SyntaxKindEnumItem
 	// Introduces an enumeration item: `+`, `1.`.
-	EnumMarker
+	SyntaxKindEnumMarker
 	// An item in a term list: `/ Term: Details`.
-	TermItem
+	SyntaxKindTermItem
 	// Introduces a term item: `/`.
-	TermMarker
+	SyntaxKindTermMarker
 	// A mathematical equation: `$x$`, `$ x^2 $`.
-	Equation
+	SyntaxKindEquation
 
 	// The contents of a mathematical equation: `x^2 + 1`.
-	Math
+	SyntaxKindMath
 	// A lone text fragment in math: `x`, `25`, `3.1415`, `=`, `|`, `[`.
-	MathText
+	SyntaxKindMathText
 	// An identifier in math: `pi`.
-	MathIdent
+	SyntaxKindMathIdent
 	// A shorthand for a unicode codepoint in math: `a <= b`.
-	MathShorthand
+	SyntaxKindMathShorthand
 	// An alignment point in math: `&`.
-	MathAlignPoint
+	SyntaxKindMathAlignPoint
 	// Matched delimiters in math: `[x + y]`.
-	MathDelimited
+	SyntaxKindMathDelimited
 	// A base with optional attachments in math: `a_1^2`.
-	MathAttach
+	SyntaxKindMathAttach
 	// Grouped primes in math: `a'''`.
-	MathPrimes
+	SyntaxKindMathPrimes
 	// A fraction in math: `x/2`.
-	MathFrac
+	SyntaxKindMathFrac
 	// A root in math: `√x`, `∛x` or `∜x`.
-	MathRoot
+	SyntaxKindMathRoot
 
 	// A hash that switches into code mode: `#`.
-	Hash
+	SyntaxKindHash
 	// A left curly brace, starting a code block: `{`.
-	LeftBrace
+	SyntaxKindLeftBrace
 	// A right curly brace, terminating a code block: `}`.
-	RightBrace
+	SyntaxKindRightBrace
 	// A left square bracket, starting a content block: `[`.
-	LeftBracket
+	SyntaxKindLeftBracket
 	// A right square bracket, terminating a content block: `]`.
-	RightBracket
+	SyntaxKindRightBracket
 	// A left round parenthesis, starting a grouped expression, collection
 	// argument or parameter list: `(`.
-	LeftParen
+	SyntaxKindLeftParen
 	// A right round parenthesis, terminating a grouped expression, collection
 	// argument or parameter list: `)`.
-	RightParen
+	SyntaxKindRightParen
 	// A comma separator in a sequence: `,`.
-	Comma
+	SyntaxKindComma
 	// A semicolon terminating an expression: `;`.
-	Semicolon
+	SyntaxKindSemicolon
 	// A colon between name/key and value in a dictionary, argument or
 	// parameter list, or between the term and body of a term list term: `:`.
-	Colon
+	SyntaxKindColon
 	// The strong text toggle, multiplication operator, and wildcard import
 	// symbol: `*`.
-	Star
+	SyntaxKindStar
 	// Toggles emphasized text and indicates a subscript in math: `_`.
-	Underscore
+	SyntaxKindUnderscore
 	// Starts and ends a mathematical equation: `$`.
-	Dollar
+	SyntaxKindDollar
 	// The unary plus and binary addition operator: `+`.
-	Plus
+	SyntaxKindPlus
 	// The unary negation and binary subtraction operator: `-`.
-	Minus
+	SyntaxKindMinus
 	// The division operator and fraction operator in math: `/`.
-	Slash
+	SyntaxKindSlash
 	// The superscript operator in math: `^`.
-	Hat
+	SyntaxKindHat
 	// The prime in math: `'`.
-	Prime
+	SyntaxKindPrime
 	// The field access and method call operator: `.`.
-	Dot
+	SyntaxKindDot
 	// The assignment operator: `=`.
-	Eq
+	SyntaxKindEq
 	// The equality operator: `==`.
-	EqEq
+	SyntaxKindEqEq
 	// The inequality operator: `!=`.
-	ExclEq
+	SyntaxKindExclEq
 	// The less-than operator: `<`.
-	Lt
+	SyntaxKindLt
 	// The less-than or equal operator: `<=`.
-	LtEq
+	SyntaxKindLtEq
 	// The greater-than operator: `>`.
-	Gt
+	SyntaxKindGt
 	// The greater-than or equal operator: `>=`.
-	GtEq
+	SyntaxKindGtEq
 	// The add-assign operator: `+=`.
-	PlusEq
+	SyntaxKindPlusEq
 	// The subtract-assign operator: `-=`.
-	HyphEq
+	SyntaxKindHyphEq
 	// The multiply-assign operator: `*=`.
-	StarEq
+	SyntaxKindStarEq
 	// The divide-assign operator: `/=`.
-	SlashEq
+	SyntaxKindSlashEq
 	// Indicates a spread or sink: `..`.
-	Dots
+	SyntaxKindDots
 	// An arrow between a closure's parameters and body: `=>`.
-	Arrow
+	SyntaxKindArrow
 	// A root: `√`, `∛` or `∜`.
-	Root
+	SyntaxKindRoot
 
 	// The `not` operator.
-	Not
+	SyntaxKindNot
 	// The `and` operator.
-	And
+	SyntaxKindAnd
 	// The `or` operator.
-	Or
+	SyntaxKindOr
 	// The `none` literal.
-	None
+	SyntaxKindNone
 	// The `auto` literal.
-	Auto
+	SyntaxKindAuto
 	// The `let` keyword.
-	Let
+	SyntaxKindLet
 	// The `set` keyword.
-	Set
+	SyntaxKindSet
 	// The `show` keyword.
-	Show
+	SyntaxKindShow
 	// The `context` keyword.
-	Context
+	SyntaxKindContext
 	// The `if` keyword.
-	If
+	SyntaxKindIf
 	// The `else` keyword.
-	Else
+	SyntaxKindElse
 	// The `for` keyword.
-	For
+	SyntaxKindFor
 	// The `in` keyword.
-	In
+	SyntaxKindIn
 	// The `while` keyword.
-	While
+	SyntaxKindWhile
 	// The `break` keyword.
-	Break
+	SyntaxKindBreak
 	// The `continue` keyword.
-	Continue
+	SyntaxKindContinue
 	// The `return` keyword.
-	Return
+	SyntaxKindReturn
 	// The `import` keyword.
-	Import
+	SyntaxKindImport
 	// The `include` keyword.
-	Include
+	SyntaxKindInclude
 	// The `as` keyword.
-	As
+	SyntaxKindAs
 
 	// The contents of a code block.
-	Code
+	SyntaxKindCode
 	// An identifier: `it`.
-	Ident
+	SyntaxKindIdent
 	// A boolean: `true`, `false`.
-	Bool
+	SyntaxKindBool
 	// An integer: `120`.
-	Int
+	SyntaxKindInt
 	// A floating-point number: `1.2`, `10e-4`.
-	Float
+	SyntaxKindFloat
 	// A numeric value with a unit: `12pt`, `3cm`, `2em`, `90deg`, `50%`.
-	Numeric
+	SyntaxKindNumeric
 	// A quoted string: `"..."`.
-	Str
+	SyntaxKindStr
 	// A code block: `{ let x = 1; x + 2 }`.
-	CodeBlock
+	SyntaxKindCodeBlock
 	// A content block: `[*Hi* there!]`.
-	ContentBlock
+	SyntaxKindContentBlock
 	// A grouped expression: `(1 + 2)`.
-	Parenthesized
+	SyntaxKindParenthesized
 	// An array: `(1, "hi", 12cm)`.
-	Array
+	SyntaxKindArray
 	// A dictionary: `(thickness: 3pt, dash: "solid")`.
-	Dict
+	SyntaxKindDict
 	// A named pair: `thickness: 3pt`.
-	Named
+	SyntaxKindNamed
 	// A keyed pair: `"spacy key": true`.
-	Keyed
+	SyntaxKindKeyed
 	// A unary operation: `-x`.
-	Unary
+	SyntaxKindUnary
 	// A binary operation: `a + b`.
-	Binary
+	SyntaxKindBinary
 	// A field access: `properties.age`.
-	FieldAccess
+	SyntaxKindFieldAccess
 	// An invocation of a function or method: `f(x, y)`.
-	FuncCall
+	SyntaxKindFuncCall
 	// A function call's argument list: `(12pt, y)`.
-	Args
+	SyntaxKindArgs
 	// Spread arguments or an argument sink: `..x`.
-	Spread
+	SyntaxKindSpread
 	// A closure: `(x, y) => z`.
-	Closure
+	SyntaxKindClosure
 	// A closure's parameters: `(x, y)`.
-	Params
+	SyntaxKindParams
 	// A let binding: `let x = 1`.
-	LetBinding
+	SyntaxKindLetBinding
 	// A set rule: `set text(...)`.
-	SetRule
+	SyntaxKindSetRule
 	// A show rule: `show heading: it => emph(it.body)`.
-	ShowRule
+	SyntaxKindShowRule
 	// A contextual expression: `context text.lang`.
-	Contextual
+	SyntaxKindContextual
 	// An if-else conditional: `if x { y } else { z }`.
-	Conditional
+	SyntaxKindConditional
 	// A while loop: `while x { y }`.
-	WhileLoop
+	SyntaxKindWhileLoop
 	// A for loop: `for x in y { z }`.
-	ForLoop
+	SyntaxKindForLoop
 	// A module import: `import "utils.typ": a, b, c`.
-	ModuleImport
+	SyntaxKindModuleImport
 	// Items to import from a module: `a, b, c`.
-	ImportItems
+	SyntaxKindImportItems
 	// A path to an imported name from a submodule: `a.b.c`.
-	ImportItemPath
+	SyntaxKindImportItemPath
 	// A renamed import item: `a as d`.
-	RenamedImportItem
+	SyntaxKindRenamedImportItem
 	// A module include: `include "chapter1.typ"`.
-	ModuleInclude
+	SyntaxKindModuleInclude
 	// A break from a loop: `break`.
-	LoopBreak
+	SyntaxKindLoopBreak
 	// A continue in a loop: `continue`.
-	LoopContinue
+	SyntaxKindLoopContinue
 	// A return from a function: `return`, `return x + 1`.
-	FuncReturn
+	SyntaxKindFuncReturn
 	// A destructuring pattern: `(x, _, ..y)`.
-	Destructuring
+	SyntaxKindDestructuring
 	// A destructuring assignment expression: `(x, y) = (1, 2)`.
-	DestructAssignment
+	SyntaxKindDestructAssignment
 )
 
 var _is_grouping = map[SyntaxKind]bool{
-	LeftBracket:  true,
-	LeftBrace:    true,
-	LeftParen:    true,
-	RightBracket: true,
-	RightBrace:   true,
-	RightParen:   true,
+	SyntaxKindLeftBracket:  true,
+	SyntaxKindLeftBrace:    true,
+	SyntaxKindLeftParen:    true,
+	SyntaxKindRightBracket: true,
+	SyntaxKindRightBrace:   true,
+	SyntaxKindRightParen:   true,
 }
 
 // Is this a bracket, brace, or parenthesis?
@@ -303,11 +303,11 @@ func (kind SyntaxKind) is_grouping() bool {
 }
 
 var _is_terminator = map[SyntaxKind]bool{
-	End:          true,
-	Semicolon:    true,
-	RightBrace:   true,
-	RightParen:   true,
-	RightBracket: true,
+	SyntaxKindEnd:          true,
+	SyntaxKindSemicolon:    true,
+	SyntaxKindRightBrace:   true,
+	SyntaxKindRightParen:   true,
+	SyntaxKindRightBracket: true,
 }
 
 // Does this node terminate a preceding expression?
@@ -316,8 +316,8 @@ func (kind SyntaxKind) is_terminator() bool {
 }
 
 var _is_block = map[SyntaxKind]bool{
-	CodeBlock:    true,
-	ContentBlock: true,
+	SyntaxKindCodeBlock:    true,
+	SyntaxKindContentBlock: true,
 }
 
 // Is this a code or content block.
@@ -326,11 +326,11 @@ func (kind SyntaxKind) is_block() bool {
 }
 
 var _is_stmt = map[SyntaxKind]bool{
-	LetBinding:    true,
-	SetRule:       true,
-	ShowRule:      true,
-	ModuleImport:  true,
-	ModuleInclude: true,
+	SyntaxKindLetBinding:    true,
+	SyntaxKindSetRule:       true,
+	SyntaxKindShowRule:      true,
+	SyntaxKindModuleImport:  true,
+	SyntaxKindModuleInclude: true,
 }
 
 // Does this node need termination through a semicolon or linebreak?
@@ -339,26 +339,26 @@ func (kind SyntaxKind) is_stmt() bool {
 }
 
 var _is_keyword = map[SyntaxKind]bool{
-	Not:      true,
-	And:      true,
-	Or:       true,
-	None:     true,
-	Auto:     true,
-	Let:      true,
-	Set:      true,
-	Show:     true,
-	Context:  true,
-	If:       true,
-	Else:     true,
-	For:      true,
-	In:       true,
-	While:    true,
-	Break:    true,
-	Continue: true,
-	Return:   true,
-	Import:   true,
-	Include:  true,
-	As:       true,
+	SyntaxKindNot:      true,
+	SyntaxKindAnd:      true,
+	SyntaxKindOr:       true,
+	SyntaxKindNone:     true,
+	SyntaxKindAuto:     true,
+	SyntaxKindLet:      true,
+	SyntaxKindSet:      true,
+	SyntaxKindShow:     true,
+	SyntaxKindContext:  true,
+	SyntaxKindIf:       true,
+	SyntaxKindElse:     true,
+	SyntaxKindFor:      true,
+	SyntaxKindIn:       true,
+	SyntaxKindWhile:    true,
+	SyntaxKindBreak:    true,
+	SyntaxKindContinue: true,
+	SyntaxKindReturn:   true,
+	SyntaxKindImport:   true,
+	SyntaxKindInclude:  true,
+	SyntaxKindAs:       true,
 }
 
 // Is this node is a keyword.
@@ -367,11 +367,11 @@ func (kind SyntaxKind) is_keyword() bool {
 }
 
 var _is_trivia = map[SyntaxKind]bool{
-	Shebang:      true,
-	LineComment:  true,
-	BlockComment: true,
-	Space:        true,
-	Parbreak:     true,
+	SyntaxKindShebang:      true,
+	SyntaxKindLineComment:  true,
+	SyntaxKindBlockComment: true,
+	SyntaxKindSpace:        true,
+	SyntaxKindParbreak:     true,
 }
 
 // Whether this kind of node is automatically skipped by the parser in
@@ -381,7 +381,7 @@ func (kind SyntaxKind) is_trivia() bool {
 }
 
 var _is_error = map[SyntaxKind]bool{
-	Error: true,
+	SyntaxKindError: true,
 }
 
 // Whether this is an error.
@@ -390,140 +390,140 @@ func (kind SyntaxKind) is_error() bool {
 }
 
 var _name = map[SyntaxKind]string{
-	End:                "end of tokens",
-	Error:              "syntax error",
-	Shebang:            "shebang",
-	LineComment:        "line comment",
-	BlockComment:       "block comment",
-	Markup:             "markup",
-	Text:               "text",
-	Space:              "space",
-	Linebreak:          "line break",
-	Parbreak:           "paragraph break",
-	Escape:             "escape sequence",
-	Shorthand:          "shorthand",
-	SmartQuote:         "smart quote",
-	Strong:             "strong content",
-	Emph:               "emphasized content",
-	Raw:                "raw block",
-	RawLang:            "raw language tag",
-	RawTrimmed:         "raw trimmed",
-	RawDelim:           "raw delimiter",
-	Link:               "link",
-	Label:              "label",
-	Ref:                "reference",
-	RefMarker:          "reference marker",
-	Heading:            "heading",
-	HeadingMarker:      "heading marker",
-	ListItem:           "list item",
-	ListMarker:         "list marker",
-	EnumItem:           "enum item",
-	EnumMarker:         "enum marker",
-	TermItem:           "term list item",
-	TermMarker:         "term marker",
-	Equation:           "equation",
-	Math:               "math",
-	MathText:           "math text",
-	MathIdent:          "math identifier",
-	MathShorthand:      "math shorthand",
-	MathAlignPoint:     "math alignment point",
-	MathDelimited:      "delimited math",
-	MathAttach:         "math attachments",
-	MathFrac:           "math fraction",
-	MathRoot:           "math root",
-	MathPrimes:         "math primes",
-	Hash:               "hash",
-	LeftBrace:          "opening brace",
-	RightBrace:         "closing brace",
-	LeftBracket:        "opening bracket",
-	RightBracket:       "closing bracket",
-	LeftParen:          "opening paren",
-	RightParen:         "closing paren",
-	Comma:              "comma",
-	Semicolon:          "semicolon",
-	Colon:              "colon",
-	Star:               "star",
-	Underscore:         "underscore",
-	Dollar:             "dollar sign",
-	Plus:               "plus",
-	Minus:              "minus",
-	Slash:              "slash",
-	Hat:                "hat",
-	Prime:              "prime",
-	Dot:                "dot",
-	Eq:                 "equals sign",
-	EqEq:               "equality operator",
-	ExclEq:             "inequality operator",
-	Lt:                 "less-than operator",
-	LtEq:               "less-than or equal operator",
-	Gt:                 "greater-than operator",
-	GtEq:               "greater-than or equal operator",
-	PlusEq:             "add-assign operator",
-	HyphEq:             "subtract-assign operator",
-	StarEq:             "multiply-assign operator",
-	SlashEq:            "divide-assign operator",
-	Dots:               "dots",
-	Arrow:              "arrow",
-	Root:               "root",
-	Not:                "operator `not`",
-	And:                "operator `and`",
-	Or:                 "operator `or`",
-	None:               "`none`",
-	Auto:               "`auto`",
-	Let:                "keyword `let`",
-	Set:                "keyword `set`",
-	Show:               "keyword `show`",
-	Context:            "keyword `context`",
-	If:                 "keyword `if`",
-	Else:               "keyword `else`",
-	For:                "keyword `for`",
-	In:                 "keyword `in`",
-	While:              "keyword `while`",
-	Break:              "keyword `break`",
-	Continue:           "keyword `continue`",
-	Return:             "keyword `return`",
-	Import:             "keyword `import`",
-	Include:            "keyword `include`",
-	As:                 "keyword `as`",
-	Code:               "code",
-	Ident:              "identifier",
-	Bool:               "boolean",
-	Int:                "integer",
-	Float:              "float",
-	Numeric:            "numeric value",
-	Str:                "string",
-	CodeBlock:          "code block",
-	ContentBlock:       "content block",
-	Parenthesized:      "group",
-	Array:              "array",
-	Dict:               "dictionary",
-	Named:              "named pair",
-	Keyed:              "keyed pair",
-	Unary:              "unary expression",
-	Binary:             "binary expression",
-	FieldAccess:        "field access",
-	FuncCall:           "function call",
-	Args:               "call arguments",
-	Spread:             "spread",
-	Closure:            "closure",
-	Params:             "closure parameters",
-	LetBinding:         "`let` expression",
-	SetRule:            "`set` expression",
-	ShowRule:           "`show` expression",
-	Contextual:         "`context` expression",
-	Conditional:        "`if` expression",
-	WhileLoop:          "while-loop expression",
-	ForLoop:            "for-loop expression",
-	ModuleImport:       "`import` expression",
-	ImportItems:        "import items",
-	ImportItemPath:     "imported item path",
-	RenamedImportItem:  "renamed import item",
-	ModuleInclude:      "`include` expression",
-	LoopBreak:          "`break` expression",
-	LoopContinue:       "`continue` expression",
-	FuncReturn:         "`return` expression",
-	Destructuring:      "destructuring pattern",
-	DestructAssignment: "destructuring assignment expression",
+	SyntaxKindEnd:                "end of tokens",
+	SyntaxKindError:              "syntax error",
+	SyntaxKindShebang:            "shebang",
+	SyntaxKindLineComment:        "line comment",
+	SyntaxKindBlockComment:       "block comment",
+	SyntaxKindMarkup:             "markup",
+	SyntaxKindText:               "text",
+	SyntaxKindSpace:              "space",
+	SyntaxKindLinebreak:          "line break",
+	SyntaxKindParbreak:           "paragraph break",
+	SyntaxKindEscape:             "escape sequence",
+	SyntaxKindShorthand:          "shorthand",
+	SyntaxKindSmartQuote:         "smart quote",
+	SyntaxKindStrong:             "strong content",
+	SyntaxKindEmph:               "emphasized content",
+	SyntaxKindRaw:                "raw block",
+	SyntaxKindRawLang:            "raw language tag",
+	SyntaxKindRawTrimmed:         "raw trimmed",
+	SyntaxKindRawDelim:           "raw delimiter",
+	SyntaxKindLink:               "link",
+	SyntaxKindLabel:              "label",
+	SyntaxKindRef:                "reference",
+	SyntaxKindRefMarker:          "reference marker",
+	SyntaxKindHeading:            "heading",
+	SyntaxKindHeadingMarker:      "heading marker",
+	SyntaxKindListItem:           "list item",
+	SyntaxKindListMarker:         "list marker",
+	SyntaxKindEnumItem:           "enum item",
+	SyntaxKindEnumMarker:         "enum marker",
+	SyntaxKindTermItem:           "term list item",
+	SyntaxKindTermMarker:         "term marker",
+	SyntaxKindEquation:           "equation",
+	SyntaxKindMath:               "math",
+	SyntaxKindMathText:           "math text",
+	SyntaxKindMathIdent:          "math identifier",
+	SyntaxKindMathShorthand:      "math shorthand",
+	SyntaxKindMathAlignPoint:     "math alignment point",
+	SyntaxKindMathDelimited:      "delimited math",
+	SyntaxKindMathAttach:         "math attachments",
+	SyntaxKindMathFrac:           "math fraction",
+	SyntaxKindMathRoot:           "math root",
+	SyntaxKindMathPrimes:         "math primes",
+	SyntaxKindHash:               "hash",
+	SyntaxKindLeftBrace:          "opening brace",
+	SyntaxKindRightBrace:         "closing brace",
+	SyntaxKindLeftBracket:        "opening bracket",
+	SyntaxKindRightBracket:       "closing bracket",
+	SyntaxKindLeftParen:          "opening paren",
+	SyntaxKindRightParen:         "closing paren",
+	SyntaxKindComma:              "comma",
+	SyntaxKindSemicolon:          "semicolon",
+	SyntaxKindColon:              "colon",
+	SyntaxKindStar:               "star",
+	SyntaxKindUnderscore:         "underscore",
+	SyntaxKindDollar:             "dollar sign",
+	SyntaxKindPlus:               "plus",
+	SyntaxKindMinus:              "minus",
+	SyntaxKindSlash:              "slash",
+	SyntaxKindHat:                "hat",
+	SyntaxKindPrime:              "prime",
+	SyntaxKindDot:                "dot",
+	SyntaxKindEq:                 "equals sign",
+	SyntaxKindEqEq:               "equality operator",
+	SyntaxKindExclEq:             "inequality operator",
+	SyntaxKindLt:                 "less-than operator",
+	SyntaxKindLtEq:               "less-than or equal operator",
+	SyntaxKindGt:                 "greater-than operator",
+	SyntaxKindGtEq:               "greater-than or equal operator",
+	SyntaxKindPlusEq:             "add-assign operator",
+	SyntaxKindHyphEq:             "subtract-assign operator",
+	SyntaxKindStarEq:             "multiply-assign operator",
+	SyntaxKindSlashEq:            "divide-assign operator",
+	SyntaxKindDots:               "dots",
+	SyntaxKindArrow:              "arrow",
+	SyntaxKindRoot:               "root",
+	SyntaxKindNot:                "operator `not`",
+	SyntaxKindAnd:                "operator `and`",
+	SyntaxKindOr:                 "operator `or`",
+	SyntaxKindNone:               "`none`",
+	SyntaxKindAuto:               "`auto`",
+	SyntaxKindLet:                "keyword `let`",
+	SyntaxKindSet:                "keyword `set`",
+	SyntaxKindShow:               "keyword `show`",
+	SyntaxKindContext:            "keyword `context`",
+	SyntaxKindIf:                 "keyword `if`",
+	SyntaxKindElse:               "keyword `else`",
+	SyntaxKindFor:                "keyword `for`",
+	SyntaxKindIn:                 "keyword `in`",
+	SyntaxKindWhile:              "keyword `while`",
+	SyntaxKindBreak:              "keyword `break`",
+	SyntaxKindContinue:           "keyword `continue`",
+	SyntaxKindReturn:             "keyword `return`",
+	SyntaxKindImport:             "keyword `import`",
+	SyntaxKindInclude:            "keyword `include`",
+	SyntaxKindAs:                 "keyword `as`",
+	SyntaxKindCode:               "code",
+	SyntaxKindIdent:              "identifier",
+	SyntaxKindBool:               "boolean",
+	SyntaxKindInt:                "integer",
+	SyntaxKindFloat:              "float",
+	SyntaxKindNumeric:            "numeric value",
+	SyntaxKindStr:                "string",
+	SyntaxKindCodeBlock:          "code block",
+	SyntaxKindContentBlock:       "content block",
+	SyntaxKindParenthesized:      "group",
+	SyntaxKindArray:              "array",
+	SyntaxKindDict:               "dictionary",
+	SyntaxKindNamed:              "named pair",
+	SyntaxKindKeyed:              "keyed pair",
+	SyntaxKindUnary:              "unary expression",
+	SyntaxKindBinary:             "binary expression",
+	SyntaxKindFieldAccess:        "field access",
+	SyntaxKindFuncCall:           "function call",
+	SyntaxKindArgs:               "call arguments",
+	SyntaxKindSpread:             "spread",
+	SyntaxKindClosure:            "closure",
+	SyntaxKindParams:             "closure parameters",
+	SyntaxKindLetBinding:         "`let` expression",
+	SyntaxKindSetRule:            "`set` expression",
+	SyntaxKindShowRule:           "`show` expression",
+	SyntaxKindContextual:         "`context` expression",
+	SyntaxKindConditional:        "`if` expression",
+	SyntaxKindWhileLoop:          "while-loop expression",
+	SyntaxKindForLoop:            "for-loop expression",
+	SyntaxKindModuleImport:       "`import` expression",
+	SyntaxKindImportItems:        "import items",
+	SyntaxKindImportItemPath:     "imported item path",
+	SyntaxKindRenamedImportItem:  "renamed import item",
+	SyntaxKindModuleInclude:      "`include` expression",
+	SyntaxKindLoopBreak:          "`break` expression",
+	SyntaxKindLoopContinue:       "`continue` expression",
+	SyntaxKindFuncReturn:         "`return` expression",
+	SyntaxKindDestructuring:      "destructuring pattern",
+	SyntaxKindDestructAssignment: "destructuring assignment expression",
 }
 
 // A human-readable name for the kind.
