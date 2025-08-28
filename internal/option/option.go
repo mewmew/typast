@@ -37,3 +37,10 @@ func (o Option[T]) Get() (T, bool) {
 	return *o.value, true
 }
 
+// Clone returns a copy of the Option.
+func (o Option[T]) Clone() Option[T] {
+	if v, ok := o.Get(); ok {
+		return Some(v)
+	}
+	return None[T]()
+}
