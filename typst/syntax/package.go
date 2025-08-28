@@ -278,6 +278,14 @@ func (spec *PackageSpec) String() string {
 	return fmt.Sprintf("@%s/%s:%s", spec.namespace, spec.name, spec.version)
 }
 
+func (spec *PackageSpec) clone() *PackageSpec {
+	return &PackageSpec{
+		namespace: spec.namespace,
+		name:      spec.name,
+		version:   spec.version,
+	}
+}
+
 // Identifies a package, but not a specific version of it.
 type VersionlessPackageSpec struct {
 	// The namespace the package lives in.

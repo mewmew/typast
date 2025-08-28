@@ -8,7 +8,7 @@ type Range struct {
 func NewRange(start, end uint64) Range {
 	return Range{
 		Start: start,
-		End: end,
+		End:   end,
 	}
 }
 
