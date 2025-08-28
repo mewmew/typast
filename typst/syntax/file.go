@@ -62,12 +62,12 @@ func NewFileId(spec option.Option[*PackageSpec], vpath *VirtualPath) FileId {
 	// Create a new entry forever by leaking the pair. We can't leak more
 	// than 2^16 pair (and typically will leak a lot less), so its not a
 	// big deal.
-	id := push_pair(pair)
+	id := FileId_push_pair(pair)
 	return id
 }
 
 // pre-condition: mutex of INTERNER must be write-locked.
-func push_pair(pair Pair) FileId {
+func FileId_push_pair(pair Pair) FileId {
 	num := uint16(len(INTERNER.from_id)) + 1
 	if num == 0 {
 		panic("out of file ids") // uint16 overflow
@@ -87,14 +87,16 @@ func push_pair(pair Pair) FileId {
 // file, constructing a file ID with a path will *not* reuse the ID even
 // if the path is the same. This method should only be used for generating
 // "virtual" file ids such as content read from stdin.
-func new_fake(vpath *VirtualPath) FileId {
+//
+// new_fake
+func new_fake_FileId(vpath *VirtualPath) FileId {
 	INTERNER.Lock() // write lock
 	defer INTERNER.Unlock()
 	pair := Pair{
 		spec:  option.None[*PackageSpec](),
 		vpath: vpath,
 	}
-	id := push_pair(pair)
+	id := FileId_push_pair(pair)
 	return id
 }
 
@@ -129,8 +131,9 @@ func (id FileId) with_extension(extension string) FileId {
 // [`into_raw`](Self::into_raw). Misuse may results in panics, but no
 // unsafety.
 //
+// from_raw
 // NonZeroU16
-func from_raw(v uint16) FileId {
+func FileId_from_raw(v uint16) FileId {
 	return FileId(v)
 }
 

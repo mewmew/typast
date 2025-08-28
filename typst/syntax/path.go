@@ -1,5 +1,7 @@
 package syntax
 
+import "path/filepath"
+
 // An absolute path in the virtual file system of a project or package.
 type VirtualPath struct {
 	path string
@@ -20,7 +22,8 @@ func NewVirtualPath(path string) *VirtualPath {
 // Resolve a path relative to this virtual path.
 func (vpath *VirtualPath) join(path string) *VirtualPath {
 	dir := filepath.Dir(vpath.path)
-	return filepath.Join(dir, path)
+	new_path := filepath.Join(dir, path)
+	return NewVirtualPath(new_path)
 }
 
 // The same path, but with a different extension.
