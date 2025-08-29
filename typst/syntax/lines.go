@@ -344,6 +344,11 @@ func char_len_utf16(c rune) int {
 }
 
 func is_char_boundary(str string, index int) bool {
+	// The start and end of the string (when index == len(str)) are considered to
+	// be boundaries.
+	if index == 0 || index == len(str) {
+		return true
+	}
 	c, _ := utf8.DecodeRuneInString(str[index:])
 	return c != utf8.RuneError
 }
