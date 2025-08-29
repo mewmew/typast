@@ -34,10 +34,31 @@ func (s *Scanner) EatIf(want rune) bool {
 	return false
 }
 
+func (s *Scanner) Eat() (rune, bool) {
+	c, n := s.next()
+	if c == EOF {
+		return 0, false
+	}
+	s.cur += n
+	s.skip()
+	return c, true
+}
+
 func (s *Scanner) EatUntil(stop rune) string {
 	for {
 		c, n := s.next()
 		if c == stop {
+			break
+		}
+		s.cur += n
+	}
+	return s.emit()
+}
+
+func (s *Scanner) EatUntilFunc(stop func(rune) bool) string {
+	for {
+		c, n := s.next()
+		if stop(c) {
 			break
 		}
 		s.cur += n
@@ -67,4 +88,8 @@ func (s *Scanner) next() (rune, int) {
 	}
 	c, n := utf8.DecodeRuneInString(s.str[s.cur:])
 	return c, n
+}
+
+func (s *Scanner) Cursor() int {
+	return s.cur
 }

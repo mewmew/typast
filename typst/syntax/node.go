@@ -853,10 +853,13 @@ func (node *SyntaxError) clone() *SyntaxError {
 //
 // **Note that all sibling and leaf accessors skip over trivia!**
 type LinkedNode[T any] struct {
-	node    *SyntaxNode
-	_parent option.Option[*LinkedNode[T]]
-	_index  uint
-	_offset uint
+	node *SyntaxNode
+	// This node's parent.
+	parent option.Option[*LinkedNode[T]]
+	// The index of this node in its parent's children list.
+	index uint
+	// The absolute byte offset of this node in the source file.
+	offset uint
 }
 
 // Start a new traversal at a root node.
@@ -864,10 +867,10 @@ type LinkedNode[T any] struct {
 // new
 func NewLinkedNode[T any](root *SyntaxNode) *LinkedNode[T] {
 	return &LinkedNode[T]{
-		node:    root,
-		_parent: option.None[*LinkedNode[T]](),
-		_index:  0,
-		_offset: 0,
+		node:   root,
+		parent: option.None[*LinkedNode[T]](),
+		index:  0,
+		offset: 0,
 	}
 }
 
@@ -876,21 +879,11 @@ func (link *LinkedNode[T]) get() *SyntaxNode {
 	return link.node
 }
 
-// The index of this node in its parent's children list.
-func (link *LinkedNode[T]) index() uint {
-	return link._index
-}
-
-// The absolute byte offset of this node in the source file.
-func (link *LinkedNode[T]) offset() uint {
-	return link._offset
-}
-
 // The byte range of this node in the source file.
 //
 // range
 func (link *LinkedNode[T]) _range() ranges.Range {
-	return ranges.NewRange(uint64(link._offset), uint64(link._offset+link.node.len()))
+	return ranges.NewRange(uint64(link.offset), uint64(link.offset+link.node.len()))
 }
 
 // An iterator over this node's children.
@@ -898,8 +891,8 @@ func (link *LinkedNode[T]) children() *LinkedChildren[T] {
 	return &LinkedChildren[T]{
 		parent:    link.clone(),
 		_children: link.node.children(), // NOTE: was `iter`
-		front:     link._offset,
-		back:      link._offset + link.node.len(), // NOTE: was `link.len()`
+		front:     link.offset,
+		back:      link.offset + link.node.len(), // NOTE: was `link.len()`
 	}
 }
 
@@ -942,27 +935,22 @@ func (link *LinkedNode[T]) find(span Span) option.Option[*LinkedNode[T]] {
 
 func (link *LinkedNode[T]) clone() *LinkedNode[T] {
 	return &LinkedNode[T]{
-		node:    link.node.clone(),
-		_parent: link._parent.Clone(), // TODO: implement deep clone?
-		_index:  0,
-		_offset: 0,
+		node:   link.node.clone(),
+		parent: link.parent.Clone(), // TODO: implement deep clone?
+		index:  0,
+		offset: 0,
 	}
 }
 
 // Access to parents and siblings.
 
-// Get this node's parent.
-func (link *LinkedNode[T]) parent() option.Option[*LinkedNode[T]] {
-	return link._parent // as_deref
-}
-
 // Get the first previous non-trivia sibling node.
 func (link *LinkedNode[T]) prev_sibling() option.Option[*LinkedNode[T]] {
-	parent, ok := link.parent().Get()
+	parent, ok := link.parent.Get()
 	if !ok {
 		return option.None[*LinkedNode[T]]()
 	}
-	index := link._index - 1
+	index := link.index - 1
 	if index < 0 {
 		return option.None[*LinkedNode[T]]()
 	}
@@ -971,12 +959,12 @@ func (link *LinkedNode[T]) prev_sibling() option.Option[*LinkedNode[T]] {
 		return option.None[*LinkedNode[T]]()
 	}
 	node := children[index]
-	offset := link._offset - node.len()
+	offset := link.offset - node.len()
 	prev := &LinkedNode[T]{
-		node:    node,
-		_parent: link._parent.Clone(), // TODO: implement deep clone?
-		_index:  index,
-		_offset: offset,
+		node:   node,
+		parent: link.parent.Clone(), // TODO: implement deep clone?
+		index:  index,
+		offset: offset,
 	}
 	// NOTE: was `prev.kind()`
 	if prev.node.kind().is_trivia() {
@@ -988,11 +976,11 @@ func (link *LinkedNode[T]) prev_sibling() option.Option[*LinkedNode[T]] {
 
 // Get the next non-trivia sibling node.
 func (link *LinkedNode[T]) next_sibling() option.Option[*LinkedNode[T]] {
-	parent, ok := link.parent().Get()
+	parent, ok := link.parent.Get()
 	if !ok {
 		return option.None[*LinkedNode[T]]()
 	}
-	index := link._index + 1
+	index := link.index + 1
 	if index == 0 {
 		// uint overflow
 		return option.None[*LinkedNode[T]]()
@@ -1002,12 +990,12 @@ func (link *LinkedNode[T]) next_sibling() option.Option[*LinkedNode[T]] {
 		return option.None[*LinkedNode[T]]()
 	}
 	node := children[index]
-	offset := link._offset + link.node.len()
+	offset := link.offset + link.node.len()
 	next := &LinkedNode[T]{
-		node:    node,
-		_parent: link._parent.Clone(), // TODO: implement deep clone?
-		_index:  index,
-		_offset: offset,
+		node:   node,
+		parent: link.parent.Clone(), // TODO: implement deep clone?
+		index:  index,
+		offset: offset,
 	}
 	// NOTE: was `next.kind()`
 	if next.node.kind().is_trivia() {
@@ -1019,7 +1007,7 @@ func (link *LinkedNode[T]) next_sibling() option.Option[*LinkedNode[T]] {
 
 // Get the kind of this node's parent.
 func (link *LinkedNode[T]) parent_kind() option.Option[SyntaxKind] {
-	parent, ok := link.parent().Get()
+	parent, ok := link.parent.Get()
 	if !ok {
 		return option.None[SyntaxKind]()
 	}
@@ -1069,7 +1057,7 @@ func (link *LinkedNode[T]) prev_leaf() option.Option[*LinkedNode[T]] {
 		}
 		node = prev
 	}
-	return link.parent().MustGet().prev_leaf()
+	return link.parent.MustGet().prev_leaf()
 }
 
 // Find the leftmost contained non-trivia leaf.
@@ -1089,11 +1077,11 @@ func (link *LinkedNode[T]) leftmost_leaf() option.Option[*LinkedNode[T]] {
 
 // Get the leaf immediately before the specified byte offset.
 func (link *LinkedNode[T]) leaf_before(cursor uint) option.Option[*LinkedNode[T]] {
-	if len(link.node.children()) == 0 && cursor <= link._offset+link.node.len() {
+	if len(link.node.children()) == 0 && cursor <= link.offset+link.node.len() {
 		return option.Some(link.clone())
 	}
 
-	offset := link._offset
+	offset := link.offset
 	count := len(link.node.children())
 	for i, child := range link.children().Children() {
 		length := child.node.len()
@@ -1108,11 +1096,11 @@ func (link *LinkedNode[T]) leaf_before(cursor uint) option.Option[*LinkedNode[T]
 
 // Get the leaf after the specified byte offset.
 func (link *LinkedNode[T]) leaf_after(cursor uint) option.Option[*LinkedNode[T]] {
-	if len(link.node.children()) == 0 && cursor < link._offset+link.node.len() {
+	if len(link.node.children()) == 0 && cursor < link.offset+link.node.len() {
 		return option.Some(link.clone())
 	}
 
-	offset := link._offset
+	offset := link.offset
 	for _, child := range link.children().Children() {
 		length := child.node.len()
 		if offset <= cursor && cursor < offset+length {
@@ -1163,7 +1151,7 @@ func (link *LinkedNode[T]) next_leaf() option.Option[*LinkedNode[T]] {
 		}
 		node = next
 	}
-	return link.parent().MustGet().next_leaf()
+	return link.parent.MustGet().next_leaf()
 }
 
 func (link *LinkedNode[T]) String() string {
@@ -1186,10 +1174,10 @@ func (l *LinkedChildren[T]) Children() iter.Seq2[int, *LinkedNode[T]] {
 			offset := l.front
 			l.front += child.len()
 			link := &LinkedNode[T]{
-				node:    child,
-				_parent: option.Some(l.parent.clone()),
-				_index:  uint(index),
-				_offset: offset,
+				node:   child,
+				parent: option.Some(l.parent.clone()),
+				index:  uint(index),
+				offset: offset,
 			}
 			if !yield(index, link) {
 				return
@@ -1205,10 +1193,10 @@ func (l *LinkedChildren[T]) RevChildren() iter.Seq2[int, *LinkedNode[T]] {
 			offset := l.back
 			l.back -= child.len()
 			link := &LinkedNode[T]{
-				node:    child,
-				_parent: option.Some(l.parent.clone()),
-				_index:  uint(index),
-				_offset: offset,
+				node:   child,
+				parent: option.Some(l.parent.clone()),
+				index:  uint(index),
+				offset: offset,
 			}
 			if !yield(index, link) {
 				return

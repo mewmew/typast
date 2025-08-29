@@ -49,10 +49,10 @@ import (
 type Span uint64 // NonZeroU64
 
 // The full range of numbers available for source file span numbering.
-var FULL = ranges.NewRange(2, 1<<47)
+var SpanFULL = ranges.NewRange(2, 1<<47)
 
 // The value reserved for the detached span.
-const DETACHED uint64 = 1
+const SpanDETACHED uint64 = 1
 
 // Data layout:
 // | 16 bits file id | 48 bits number |
@@ -73,14 +73,14 @@ const (
 )
 
 var (
-	RANGE_BASE uint64 = FULL.End
+	RANGE_BASE uint64 = SpanFULL.End
 )
 
 // Create a span that does not point into any file.
 //
 // detached
 func Span_detached() Span {
-	return Span(DETACHED)
+	return Span(SpanDETACHED)
 }
 
 // Create a new span from a file id and a number.
@@ -89,7 +89,7 @@ func Span_detached() Span {
 //
 // from_number
 func Span_from_number(id FileId, number uint64) option.Option[Span] {
-	if number < FULL.Start || number >= FULL.End {
+	if number < SpanFULL.Start || number >= SpanFULL.End {
 		return option.None[Span]()
 	}
 	return option.Some(Span_pack(id, number))
@@ -137,7 +137,7 @@ func Span_pack(id FileId, low uint64) Span {
 
 // Whether the span is detached.
 func (span Span) is_detached() bool {
-	return uint64(span) == DETACHED
+	return uint64(span) == SpanDETACHED
 }
 
 // The id of the file the span points into.
