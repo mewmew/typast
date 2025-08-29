@@ -62,7 +62,10 @@ func (l *Lines) len_lines() uint {
 
 // Return the index of the UTF-16 code unit at the byte index.
 func (l *Lines) byte_to_utf16(byte_idx uint) option.Option[uint] {
-	line_idx := l.byte_to_line(byte_idx).MustGet()
+	line_idx, ok := l.byte_to_line(byte_idx).Get()
+	if !ok {
+		return option.None[uint]()
+	}
 	line := l.lines[line_idx]
 	head := l.text[line.byte_idx:byte_idx]
 	return option.Some(line.utf16_idx + len_utf16(head))
