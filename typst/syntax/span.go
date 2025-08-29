@@ -5,6 +5,7 @@ import (
 
 	"github.com/mewmew/typast/internal/option"
 	"github.com/mewmew/typast/internal/ranges"
+	overflow "github.com/mrtkp9993/go-overflow"
 	"github.com/pkg/errors"
 )
 
@@ -49,7 +50,7 @@ import (
 type Span uint64 // NonZeroU64
 
 // The full range of numbers available for source file span numbering.
-var SpanFULL = ranges.NewRange(2, 1<<47)
+var SpanFULL = ranges.NewRange(2, RANGE_BASE)
 
 // The value reserved for the detached span.
 const SpanDETACHED uint64 = 1
@@ -64,16 +65,13 @@ const SpanDETACHED uint64 = 1
 //     `RANGE_BASE` and then use shifting/bitmasking to extract the
 //     components.
 const (
-	NUMBER_BITS             = 48
-	FILE_ID_SHIFT           = NUMBER_BITS
-	NUMBER_MASK      uint64 = (1 << NUMBER_BITS) - 1
-	RANGE_PART_BITS         = 23
-	RANGE_PART_SHIFT        = RANGE_PART_BITS
-	RANGE_PART_MASK  uint64 = (1 << RANGE_PART_BITS) - 1
-)
-
-var (
-	RANGE_BASE uint64 = SpanFULL.End
+	NUMBER_BITS      = 48
+	FILE_ID_SHIFT    = NUMBER_BITS
+	NUMBER_MASK      = uint64(1<<NUMBER_BITS) - 1
+	RANGE_BASE       = uint64(1 << 47)
+	RANGE_PART_BITS  = 23
+	RANGE_PART_SHIFT = RANGE_PART_BITS
+	RANGE_PART_MASK  = uint64(1<<RANGE_PART_BITS) - 1
 )
 
 // Create a span that does not point into any file.
@@ -162,8 +160,8 @@ func (span Span) number() uint64 {
 //
 // Typically, you should use `WorldExt::range` instead.
 func (span Span) _range() option.Option[ranges.Range] {
-	number := span.number() - RANGE_BASE
-	if number < 0 {
+	number, fail := overflow.SubUint64(span.number(), RANGE_BASE)
+	if fail { // underflow
 		return option.None[ranges.Range]()
 	}
 	start := number >> RANGE_PART_SHIFT

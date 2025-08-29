@@ -9,6 +9,7 @@ import (
 	"github.com/mewmew/typast/internal/mathx"
 	"github.com/mewmew/typast/internal/option"
 	"github.com/mewmew/typast/internal/ranges"
+	overflow "github.com/mrtkp9993/go-overflow"
 	"github.com/pkg/errors"
 )
 
@@ -681,9 +682,9 @@ func (node *InnerNode) replace_children(_range ranges.Range, replacement []*Synt
 		// - or this inner node's span number plus one if renumbering starts
 		//   at the first child.
 		var start_number uint64
-		if start := renumber.Start - 1; start >= 0 {
+		if start, fail := overflow.SubUint64(renumber.Start, 1); !fail {
 			start_number = node.children[start].upper()
-		} else {
+		} else { // underflow
 			start_number = node.span.number() + 1
 		}
 
@@ -950,8 +951,8 @@ func (link *LinkedNode[T]) prev_sibling() option.Option[*LinkedNode[T]] {
 	if !ok {
 		return option.None[*LinkedNode[T]]()
 	}
-	index := link.index - 1
-	if index < 0 {
+	index, fail := overflow.SubUint64(uint64(link.index), 1)
+	if fail { // underflow
 		return option.None[*LinkedNode[T]]()
 	}
 	children := parent.node.children()
@@ -963,7 +964,7 @@ func (link *LinkedNode[T]) prev_sibling() option.Option[*LinkedNode[T]] {
 	prev := &LinkedNode[T]{
 		node:   node,
 		parent: link.parent.Clone(), // TODO: implement deep clone?
-		index:  index,
+		index:  uint(index),
 		offset: offset,
 	}
 	// NOTE: was `prev.kind()`
@@ -980,9 +981,8 @@ func (link *LinkedNode[T]) next_sibling() option.Option[*LinkedNode[T]] {
 	if !ok {
 		return option.None[*LinkedNode[T]]()
 	}
-	index := link.index + 1
-	if index == 0 {
-		// uint overflow
+	index, fail := overflow.AddUint64(uint64(link.index), 1)
+	if fail { // overflow
 		return option.None[*LinkedNode[T]]()
 	}
 	children := parent.node.children()
@@ -994,7 +994,7 @@ func (link *LinkedNode[T]) next_sibling() option.Option[*LinkedNode[T]] {
 	next := &LinkedNode[T]{
 		node:   node,
 		parent: link.parent.Clone(), // TODO: implement deep clone?
-		index:  index,
+		index:  uint(index),
 		offset: offset,
 	}
 	// NOTE: was `next.kind()`
