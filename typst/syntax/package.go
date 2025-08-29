@@ -254,7 +254,7 @@ func (spec *PackageSpec) versionless() *VersionlessPackageSpec {
 
 // FromStr for PackageSpec
 func ParsePackageSpec(str string) (*PackageSpec, error) {
-	s := scanner.NewScanner(str)
+	s := scanner.New(str)
 	namespace, err := parse_namespace(s)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -305,7 +305,7 @@ func (spec *VersionlessPackageSpec) at(version PackageVersion) *PackageSpec {
 
 // FromStr for VersionlessPackageSpec
 func ParseVersionlessPackageSpec(str string) (*VersionlessPackageSpec, error) {
-	s := scanner.NewScanner(str)
+	s := scanner.New(str)
 	namespace, err := parse_namespace(s)
 	if err != nil {
 		return nil, errors.WithStack(err)

@@ -12,6 +12,7 @@ import (
 	"github.com/mewmew/typast/internal/option"
 	"github.com/mewmew/typast/internal/ranges"
 	"github.com/mewmew/typast/internal/scanner"
+	"github.com/mewmew/typast/internal/stdx"
 )
 
 // --- [ Lines ] ---------------------------------------------------------------
@@ -215,7 +216,7 @@ func (l *Lines) replacement_range(new string) option.Option[ReplacementRange] {
 		return option.None[ReplacementRange]()
 	}
 
-	for !is_char_boundary(old, prefix) || !is_char_boundary(new, prefix) {
+	for !stdx.IsCharBoundary(old, prefix) || !stdx.IsCharBoundary(new, prefix) {
 		prefix -= 1
 	}
 
@@ -226,7 +227,7 @@ func (l *Lines) replacement_range(new string) option.Option[ReplacementRange] {
 		}
 	}
 
-	for !is_char_boundary(old, len(old)-suffix) || !is_char_boundary(new, len(new)-suffix) {
+	for !stdx.IsCharBoundary(old, len(old)-suffix) || !stdx.IsCharBoundary(new, len(new)-suffix) {
 		suffix += 1
 	}
 
@@ -281,7 +282,7 @@ func lines_from_string(text string) []Line {
 
 // Compute a line iterator from an offset.
 func lines_from(byte_offset uint, utf16_offset uint, text string) iter.Seq[Line] {
-	s := scanner.NewScanner(text)
+	s := scanner.New(text)
 	utf16_idx := utf16_offset
 	return func(yield func(Line) bool) {
 		// TODO: double-check that conversion from Rust to Go was correct.
@@ -341,16 +342,6 @@ func char_len_utf16(c rune) int {
 		panic(fmt.Errorf("invalid utf16 character %[1]U %[1]q", c))
 	}
 	return n // number of 16-bit words used by character.
-}
-
-func is_char_boundary(str string, index int) bool {
-	// The start and end of the string (when index == len(str)) are considered to
-	// be boundaries.
-	if index == 0 || index == len(str) {
-		return true
-	}
-	c, _ := utf8.DecodeRuneInString(str[index:])
-	return c != utf8.RuneError
 }
 
 func string_replace_range(str string, _range ranges.Range, with string) string {
