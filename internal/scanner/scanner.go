@@ -221,6 +221,20 @@ func (s *Scanner) EatIfAny(valid []rune) bool {
 	return s.EatIfFunc(cond)
 }
 
+// EatWhile consumes while the given pattern is what's right after the cursor.
+//
+// Returns the consumed substring.
+func (s *Scanner) EatWhile(pattern string) string {
+	start := s.cursor
+	after := s.After()
+	n := uint(0)
+	for strings.HasPrefix(after[n:], pattern) {
+		n += uint(len(pattern))
+	}
+	s.cursor += n
+	return s.From(start)
+}
+
 // EatWhileFunc consumes while the given pattern (a sequence of characters that
 // satisfy cond) is what's right after the cursor.
 //
@@ -231,6 +245,23 @@ func (s *Scanner) EatWhileFunc(cond func(c rune) bool) string {
 	n := 0
 	for _, c := range after {
 		if !cond(c) {
+			break
+		}
+		n += utf8.RuneLen(c)
+	}
+	s.cursor += uint(n)
+	return s.From(start)
+}
+
+// EatUntil consumes until the given pattern is what's right after the cursor.
+//
+// Returns the consumed substring.
+func (s *Scanner) EatUntil(pattern string) string {
+	start := s.cursor
+	after := s.After()
+	n := 0
+	for _, c := range after {
+		if strings.HasPrefix(after[n:], pattern) {
 			break
 		}
 		n += utf8.RuneLen(c)
@@ -282,4 +313,11 @@ func (s *Scanner) checkCharBoundary(index uint) {
 	if !stdx.IsCharBoundary(s.text, index) {
 		panic("not on character boundary")
 	}
+}
+
+// Clone returns a copy of the given scanner.
+func (s *Scanner) Clone() *Scanner {
+	new := &Scanner{}
+	*new = *s
+	return new
 }

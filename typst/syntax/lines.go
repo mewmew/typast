@@ -216,7 +216,7 @@ func (l *Lines) replacement_range(new string) option.Option[ReplacementRange] {
 		return option.None[ReplacementRange]()
 	}
 
-	for !stdx.IsCharBoundary(old, prefix) || !stdx.IsCharBoundary(new, prefix) {
+	for !stdx.IsCharBoundary(old, uint(prefix)) || !stdx.IsCharBoundary(new, uint(prefix)) {
 		prefix -= 1
 	}
 
@@ -227,7 +227,7 @@ func (l *Lines) replacement_range(new string) option.Option[ReplacementRange] {
 		}
 	}
 
-	for !stdx.IsCharBoundary(old, len(old)-suffix) || !stdx.IsCharBoundary(new, len(new)-suffix) {
+	for !stdx.IsCharBoundary(old, uint(len(old)-suffix)) || !stdx.IsCharBoundary(new, uint(len(new)-suffix)) {
 		suffix += 1
 	}
 
@@ -297,7 +297,7 @@ func lines_from(byte_offset uint, utf16_offset uint, text string) iter.Seq[Line]
 				return
 			}
 
-			if c, ok := s.Eat(); ok && c == '\r' && s.EatIf('\n') {
+			if c, ok := s.Eat(); ok && c == '\r' && s.EatIf("\n") {
 				utf16_idx += 1
 			}
 
@@ -348,12 +348,4 @@ func string_replace_range(str string, _range ranges.Range, with string) string {
 	pre := str[:_range.Start]
 	post := str[_range.End:]
 	return pre + with + post
-}
-
-func is_newline(c rune) bool {
-	switch c {
-	case '\r', '\n':
-		return true
-	}
-	return false
 }

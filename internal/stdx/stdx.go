@@ -4,6 +4,7 @@
 package stdx
 
 import (
+	"strings"
 	"unicode"
 	"unicode/utf8"
 )
@@ -28,4 +29,45 @@ func IsCharBoundary(str string, index uint) bool {
 // is_whitespace
 func IsWhitespace(c rune) bool {
 	return unicode.IsSpace(c)
+}
+
+// is_ascii_alphabetic
+func IsAsciiAlphabetic(c rune) bool {
+	const (
+		alphabet = "abcdefghijklmnopqrstuvwxyz"
+		ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	)
+	if strings.ContainsRune(alphabet, c) {
+		return true
+	}
+	if strings.ContainsRune(ALPHABET, c) {
+		return true
+	}
+	return false
+}
+
+// is_ascii_digit
+func IsAsciiDigit(c rune) bool {
+	const digits = "0123456789"
+	return strings.ContainsRune(digits, c)
+}
+
+// is_ascii_alphanumeric
+func IsAsciiAlphanumeric(c rune) bool {
+	return IsAsciiAlphabetic(c) || IsAsciiDigit(c)
+}
+
+// is_alphabetic
+func IsAlphabetic(c rune) bool {
+	return unicode.IsLetter(c)
+}
+
+// is_numeric
+func IsNumeric(c rune) bool {
+	return unicode.IsNumber(c)
+}
+
+// is_alphanumeric
+func IsAlphanumeric(c rune) bool {
+	return IsAlphabetic(c) || IsNumeric(c)
 }

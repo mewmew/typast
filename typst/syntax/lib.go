@@ -7,9 +7,9 @@ type SyntaxMode uint8
 
 const (
 	// Text and markup, as in the top level.
-	ModeMarkup SyntaxMode = iota + 1
+	SyntaxModeMarkup SyntaxMode = iota + 1
 	// Math atoms, operators, etc., as in equations.
-	ModeMath
+	SyntaxModeMath
 	// Keywords, literals and operators, as after hashes.
-	ModeCode
+	SyntaxModeCode
 )

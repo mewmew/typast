@@ -62,4 +62,3 @@ func (s *SliceStack[T]) IsEmpty() bool {
 func (s *SliceStack[T]) String() string {
 	return fmt.Sprint(s.data)
 }
-

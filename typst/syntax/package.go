@@ -328,11 +328,11 @@ func (spec *VersionlessPackageSpec) String() string {
 }
 
 func parse_namespace(s *scanner.Scanner) (string, error) {
-	if !s.EatIf('@') {
+	if !s.EatIf("@") {
 		return "", errors.New("package specification must start with '@'")
 	}
 
-	namespace := s.EatUntil('/')
+	namespace := s.EatUntil("/")
 	if len(namespace) == 0 {
 		return "", errors.New("package specification is missing namespace")
 	} else if !is_ident(namespace) {
@@ -343,9 +343,9 @@ func parse_namespace(s *scanner.Scanner) (string, error) {
 }
 
 func parse_name(s *scanner.Scanner) (string, error) {
-	s.EatIf('/')
+	s.EatIf("/")
 
-	name := s.EatUntil(':')
+	name := s.EatUntil(":")
 	if len(name) == 0 {
 		return "", errors.New("package specification is missing name")
 	} else if !is_ident(name) {
@@ -356,7 +356,7 @@ func parse_name(s *scanner.Scanner) (string, error) {
 }
 
 func parse_version(s *scanner.Scanner) (PackageVersion, error) {
-	s.EatIf(':')
+	s.EatIf(":")
 
 	version := s.After()
 	if len(version) == 0 {
