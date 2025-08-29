@@ -73,13 +73,15 @@ func (l *Lines) byte_to_utf16(byte_idx uint) option.Option[uint] {
 
 // Return the index of the line that contains the given byte index.
 func (l *Lines) byte_to_line(byte_idx uint) option.Option[uint] {
+	// TODO: double-check translation from Rust to Go (should be `>=` ?).
 	if int(byte_idx) > len(l.text) {
 		return option.None[uint]()
 	}
-	// TODO: double-check translation from Rust to Go.
-	i := sort.Search(len(l.lines), func(i int) bool { return l.lines[i].byte_idx >= byte_idx })
-	if i >= len(l.lines) {
-		i = len(l.lines) - 1
+	i := sort.Search(len(l.lines), func(i int) bool {
+		return l.lines[i].byte_idx >= byte_idx
+	})
+	if !(i < len(l.lines) && l.lines[i].byte_idx == byte_idx) {
+		i--
 	}
 	return option.Some(uint(i))
 }
@@ -111,11 +113,14 @@ func (l *Lines) byte_to_line_column(byte_idx uint) option.Option[Position] {
 
 // Return the byte index at the UTF-16 code unit.
 func (l *Lines) utf16_to_byte(utf16_idx uint) option.Option[uint] {
-	// TODO: double-check translation from Rust to Go.
-	i := sort.Search(len(l.lines), func(i int) bool { return l.lines[i].utf16_idx >= utf16_idx })
-	if i >= len(l.lines) {
-		i = len(l.lines) - 1
+	i := sort.Search(len(l.lines), func(i int) bool {
+		return l.lines[i].utf16_idx >= utf16_idx
+	})
+	if !(i < len(l.lines) && l.lines[i].utf16_idx == utf16_idx) {
+		i--
 	}
+
+	// TODO: double-check translation from Rust to Go.
 	line := l.lines[i]
 	text := l.text
 	k := line.utf16_idx
