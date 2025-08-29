@@ -269,7 +269,14 @@ func (l *Lines) edit(replace ranges.Range, with string) {
 //
 // lines
 func lines_from_string(text string) []Line {
-	return slices.Collect(lines_from(0, 0, text))
+	var lines []Line
+	line := Line{
+		byte_idx:  0,
+		utf16_idx: 0,
+	}
+	lines = append(lines, line)
+	lines = append(lines, slices.Collect(lines_from(0, 0, text))...)
+	return lines
 }
 
 // Compute a line iterator from an offset.
