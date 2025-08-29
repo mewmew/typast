@@ -1,6 +1,8 @@
 package scanner
 
-import "unicode/utf8"
+import (
+	"unicode/utf8"
+)
 
 const EOF = -1
 
@@ -26,6 +28,9 @@ func (s *Scanner) Done() bool {
 
 func (s *Scanner) EatIf(want rune) bool {
 	c, n := s.next()
+	if c == EOF {
+		return false
+	}
 	if c == want {
 		s.cur += n
 		s.skip()
@@ -47,6 +52,9 @@ func (s *Scanner) Eat() (rune, bool) {
 func (s *Scanner) EatUntil(stop rune) string {
 	for {
 		c, n := s.next()
+		if c == EOF {
+			break // TODO: should we emit if stop is not found?
+		}
 		if c == stop {
 			break
 		}
@@ -58,6 +66,9 @@ func (s *Scanner) EatUntil(stop rune) string {
 func (s *Scanner) EatUntilFunc(stop func(rune) bool) string {
 	for {
 		c, n := s.next()
+		if c == EOF {
+			break // TODO: should we emit if stop is not found?
+		}
 		if stop(c) {
 			break
 		}
