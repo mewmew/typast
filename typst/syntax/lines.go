@@ -220,7 +220,7 @@ func (l *Lines) replacement_range(new string) option.Option[ReplacementRange] {
 	}
 
 	suffix := 0
-	for i, j := len(old[prefix:])-1, len(new[prefix:])-1; i >= 0 && j >= 0; i, j = i-1, j-1 {
+	for i, j := len(old)-1, len(new)-1; i >= prefix && j >= prefix; i, j = i-1, j-1 {
 		if old[i] == new[j] {
 			suffix++
 		}
