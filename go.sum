@@ -1,3 +1,5 @@
+github.com/bits-and-blooms/bitset v1.24.0 h1:H4x4TuulnokZKvHLfzVRTHJfFfnHEeSYJizujEZvmAM=
+github.com/bits-and-blooms/bitset v1.24.0/go.mod h1:7hO7Gc7Pp1vODcmWvKMRA9BNmbv6a/7QIWpPxHddWR8=
 github.com/clipperhouse/uax29 v1.15.0 h1:L6A788hwxPfwvZs2JknKTDqiNN8eloRxIBIr12bpIlM=
 github.com/clipperhouse/uax29 v1.15.0/go.mod h1:paNABhygWmmjkg0ROxKQoenJAX4dM9AS8biVkXmAK0c=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

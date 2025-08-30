@@ -286,6 +286,10 @@ const (
 	SyntaxKindDestructuring
 	// A destructuring assignment expression: `(x, y) = (1, 2)`.
 	SyntaxKindDestructAssignment
+
+	SyntaxKindFirst = SyntaxKindEnd
+	SyntaxKindLast  = SyntaxKindDestructAssignment
+	NSyntaxKinds    = uint(SyntaxKindLast - SyntaxKindFirst + 1)
 )
 
 var _is_grouping = map[SyntaxKind]bool{

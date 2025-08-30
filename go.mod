@@ -3,6 +3,7 @@ module github.com/mewmew/typast
 go 1.24.6
 
 require (
+	github.com/bits-and-blooms/bitset v1.24.0
 	github.com/clipperhouse/uax29 v1.15.0
 	github.com/mrtkp9993/go-overflow v0.1.1
 	github.com/pelletier/go-toml/v2 v2.2.4
