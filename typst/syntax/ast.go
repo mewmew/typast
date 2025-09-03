@@ -124,6 +124,17 @@ func SyntaxNode_is[T AstNode](node *SyntaxNode) bool {
 // cast
 func SyntaxNode_cast[T AstNode](node *SyntaxNode) option.Option[T] {
 	var zero T
+	//if _, ok := zero.(Expr); ok {
+	//	return Expr_from_untyped(node)
+	//}
+	// HACK: unable to use type assertion with type parameter, so using string
+	// representation hack instead :)
+	type_name := fmt.Sprintf("%T", new(T))
+	if type_name == "*syntax.Expr" {
+		if expr, ok := Expr_from_untyped(node).Get(); ok {
+			return option.Some[T](expr.(T))
+		}
+	}
 	if _n, ok := zero.from_untyped(node).Get(); ok {
 		n := _n.(T)
 		return option.Some[T](n)
