@@ -69,7 +69,9 @@ func NewError(error *SyntaxError, text string) *SyntaxNode {
 // Create a dummy node of the given kind.
 //
 // Panics if `kind` is `SyntaxKind::Error`.
-func placeholder(kind SyntaxKind) *SyntaxNode {
+//
+// placeholder
+func SyntaxNode_placeholder(kind SyntaxKind) *SyntaxNode {
 	if kind == SyntaxKindError {
 		panic("cannot create error placeholder")
 	}

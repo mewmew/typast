@@ -31,19 +31,21 @@ func IsWhitespace(c rune) bool {
 	return unicode.IsSpace(c)
 }
 
+// is_ascii_lowercase
+func IsAsciiLowercase(c rune) bool {
+	const alphabet = "abcdefghijklmnopqrstuvwxyz"
+	return strings.ContainsRune(alphabet, c)
+}
+
+// is_ascii_uppercase
+func IsAsciiUppercase(c rune) bool {
+	const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	return strings.ContainsRune(ALPHABET, c)
+}
+
 // is_ascii_alphabetic
 func IsAsciiAlphabetic(c rune) bool {
-	const (
-		alphabet = "abcdefghijklmnopqrstuvwxyz"
-		ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	)
-	if strings.ContainsRune(alphabet, c) {
-		return true
-	}
-	if strings.ContainsRune(ALPHABET, c) {
-		return true
-	}
-	return false
+	return IsAsciiLowercase(c) || IsAsciiUppercase(c)
 }
 
 // is_ascii_digit
@@ -55,6 +57,12 @@ func IsAsciiDigit(c rune) bool {
 // is_ascii_alphanumeric
 func IsAsciiAlphanumeric(c rune) bool {
 	return IsAsciiAlphabetic(c) || IsAsciiDigit(c)
+}
+
+// is_ascii_hexdigit
+func IsAsciiHexdigit(c rune) bool {
+	const hex = "abcdefABCDEF"
+	return IsAsciiDigit(c) || strings.ContainsRune(hex, c)
 }
 
 // is_alphabetic

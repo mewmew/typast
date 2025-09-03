@@ -153,7 +153,44 @@ func (s *Scanner) Scout(n int) (rune, bool) {
 	return 0, false
 }
 
-// TODO: implement Locate.
+// Locate returns the byte index of the n-th character relative to the cursor.
+//
+// - `locate(-1)` is the byte position of the character before the cursor.
+// - `locate(0)` is the same as `cursor()`.
+func (s *Scanner) Locate(n int) uint {
+	if n >= 0 {
+		chars := []rune(s.After()) // TODO: optimize?
+		i := 0
+		length := 0
+		for _, c := range chars {
+			if !utf8.ValidRune(c) {
+				break
+			}
+			length += utf8.RuneLen(c)
+			i++
+			if i == n {
+				break
+			}
+		}
+		return s.Cursor() + uint(length)
+	} else {
+		chars := []rune(s.Before()) // TODO: optimize?
+		i := 0
+		n = -n
+		length := 0
+		for _, c := range slices.Backward(chars) {
+			if !utf8.ValidRune(c) {
+				break
+			}
+			length += utf8.RuneLen(c)
+			i++
+			if i == n {
+				break
+			}
+		}
+		return uint(int64(s.Cursor()) - int64(length))
+	}
+}
 
 // Eat consumes and return the character right after the cursor.
 func (s *Scanner) Eat() (rune, bool) {
