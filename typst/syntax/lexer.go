@@ -45,6 +45,15 @@ func NewLexer(text string, mode SyntaxMode) *Lexer {
 	}
 }
 
+func (lexer *Lexer) clone() *Lexer {
+	return &Lexer{
+		s:       lexer.s.Clone(),
+		mode:    lexer.mode,
+		newline: lexer.newline,
+		err:     lexer.err.Clone(),
+	}
+}
+
 // Change the lexing mode.
 func (lexer *Lexer) set_mode(mode SyntaxMode) {
 	lexer.mode = mode

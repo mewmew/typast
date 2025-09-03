@@ -5,6 +5,7 @@ go 1.24.6
 require (
 	github.com/bits-and-blooms/bitset v1.24.0
 	github.com/clipperhouse/uax29 v1.15.0
+	github.com/mewmew/mathclass v0.0.0-20250903214400-8444688c1fcf
 	github.com/mrtkp9993/go-overflow v0.1.1
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/pkg/errors v0.9.1

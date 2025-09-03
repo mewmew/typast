@@ -12,7 +12,7 @@ import (
 
 // A set of syntax kinds.
 type SyntaxSet struct {
-	set *bitset.BitSet
+	b *bitset.BitSet
 }
 
 // Create a new set from a slice of kinds.
@@ -20,10 +20,10 @@ type SyntaxSet struct {
 // new
 func NewSyntaxSet(kinds ...SyntaxKind) *SyntaxSet {
 	set := &SyntaxSet{
-		set: bitset.New(NSyntaxKinds),
+		b: bitset.New(NSyntaxKinds),
 	}
 	for _, kind := range kinds {
-		set.add(kind)
+		set.b.Set(bit_num(kind))
 	}
 	return set
 }
@@ -32,20 +32,28 @@ func NewSyntaxSet(kinds ...SyntaxKind) *SyntaxSet {
 //
 // You can only add kinds with discriminator < 128.
 func (set *SyntaxSet) add(kind SyntaxKind) *SyntaxSet {
-	set.set.Set(bit_num(kind))
-	return set
+	new := set.Clone() // don't modify original
+	new.b.Set(bit_num(kind))
+	return new
 }
 
 // Combine two syntax sets.
 func (set *SyntaxSet) union(other *SyntaxSet) *SyntaxSet {
-	return &SyntaxSet{
-		set: set.set.Union(other.set),
-	}
+	new := set.Clone() // don't modify original
+	new.b.Union(other.b)
+	return new
 }
 
 // Whether the set contains the given syntax kind.
 func (set *SyntaxSet) contains(kind SyntaxKind) bool {
-	return set.set.Test(bit_num(kind))
+	return set.b.Test(bit_num(kind))
+}
+
+func (set *SyntaxSet) Clone() *SyntaxSet {
+	new := &SyntaxSet{
+		b: set.b.Clone(),
+	}
+	return new
 }
 
 func bit_num(kind SyntaxKind) uint {
@@ -53,7 +61,9 @@ func bit_num(kind SyntaxKind) uint {
 }
 
 // Syntax kinds that can start a statement.
-var STMT = NewSyntaxSet(
+//
+// STMT
+var Set_STMT = NewSyntaxSet(
 	SyntaxKindLet,
 	SyntaxKindSet,
 	SyntaxKindShow,
@@ -63,7 +73,9 @@ var STMT = NewSyntaxSet(
 )
 
 // Syntax kinds that can start a math expression.
-var MATH_EXPR = NewSyntaxSet(
+//
+// MATH_EXPR
+var Set_MATH_EXPR = NewSyntaxSet(
 	SyntaxKindHash,
 	SyntaxKindMathIdent,
 	SyntaxKindFieldAccess,
@@ -83,16 +95,24 @@ var MATH_EXPR = NewSyntaxSet(
 )
 
 // Syntax kinds that can start a code expression.
-var CODE_EXPR = CODE_PRIMARY.union(UNARY_OP)
+//
+// CODE_EXPR
+var Set_CODE_EXPR = Set_CODE_PRIMARY.union(Set_UNARY_OP)
 
 // Syntax kinds that can start an atomic code expression.
-var ATOMIC_CODE_EXPR = ATOMIC_CODE_PRIMARY
+//
+// ATOMIC_CODE_EXPR
+var Set_ATOMIC_CODE_EXPR = Set_ATOMIC_CODE_PRIMARY
 
 // Syntax kinds that can start a code primary.
-var CODE_PRIMARY = ATOMIC_CODE_PRIMARY.add(SyntaxKindUnderscore)
+//
+// CODE_PRIMARY
+var Set_CODE_PRIMARY = Set_ATOMIC_CODE_PRIMARY.add(SyntaxKindUnderscore)
 
 // Syntax kinds that can start an atomic code primary.
-var ATOMIC_CODE_PRIMARY = NewSyntaxSet(
+//
+// ATOMIC_CODE_PRIMARY
+var Set_ATOMIC_CODE_PRIMARY = NewSyntaxSet(
 	SyntaxKindIdent,
 	SyntaxKindLeftBrace,
 	SyntaxKindLeftBracket,
@@ -122,14 +142,18 @@ var ATOMIC_CODE_PRIMARY = NewSyntaxSet(
 )
 
 // Syntax kinds that are unary operators.
-var UNARY_OP = NewSyntaxSet(
+//
+// UNARY_OP
+var Set_UNARY_OP = NewSyntaxSet(
 	SyntaxKindPlus,
 	SyntaxKindMinus,
 	SyntaxKindNot,
 )
 
 // Syntax kinds that are binary operators.
-var BINARY_OP = NewSyntaxSet(
+//
+// BINARY_OP
+var Set_BINARY_OP = NewSyntaxSet(
 	SyntaxKindPlus,
 	SyntaxKindMinus,
 	SyntaxKindStar,
@@ -151,19 +175,31 @@ var BINARY_OP = NewSyntaxSet(
 )
 
 // Syntax kinds that can start an argument in a function call.
-var ARRAY_OR_DICT_ITEM = CODE_EXPR.add(SyntaxKindDots)
+//
+// ARRAY_OR_DICT_ITEM
+var Set_ARRAY_OR_DICT_ITEM = Set_CODE_EXPR.add(SyntaxKindDots)
 
 // Syntax kinds that can start an argument in a function call.
-var ARG = CODE_EXPR.add(SyntaxKindDots)
+//
+// ARG
+var Set_ARG = Set_CODE_EXPR.add(SyntaxKindDots)
 
 // Syntax kinds that can start a parameter in a parameter list.
-var PARAM = PATTERN.add(SyntaxKindDots)
+//
+// PARAM
+var Set_PARAM = Set_PATTERN.add(SyntaxKindDots)
 
 // Syntax kinds that can start a destructuring item.
-var DESTRUCTURING_ITEM = PATTERN.add(SyntaxKindDots)
+//
+// DESTRUCTURING_ITEM
+var Set_DESTRUCTURING_ITEM = Set_PATTERN.add(SyntaxKindDots)
 
 // Syntax kinds that can start a pattern.
-var PATTERN = PATTERN_LEAF.add(SyntaxKindLeftParen).add(SyntaxKindUnderscore)
+//
+// PATTERN
+var Set_PATTERN = Set_PATTERN_LEAF.add(SyntaxKindLeftParen).add(SyntaxKindUnderscore)
 
 // Syntax kinds that can start a pattern leaf.
-var PATTERN_LEAF = ATOMIC_CODE_EXPR
+//
+// PATTERN_LEAF
+var Set_PATTERN_LEAF = Set_ATOMIC_CODE_EXPR

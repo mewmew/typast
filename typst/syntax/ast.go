@@ -1688,7 +1688,7 @@ func UnOp_from_kind(token SyntaxKind) option.Option[UnOp] {
 }
 
 // The precedence of this operator.
-func (op UnOp) precedence() uint64 {
+func (op UnOp) precedence() uint {
 	switch op {
 	case UnOp_Pos, UnOp_Neg:
 		return 7
@@ -1878,7 +1878,7 @@ func BinOp_from_kind(token SyntaxKind) option.Option[BinOp] {
 }
 
 // The precedence of this operator.
-func (op BinOp) precedence() uint64 {
+func (op BinOp) precedence() uint {
 	switch op {
 	case BinOp_Mul:
 		return 6
