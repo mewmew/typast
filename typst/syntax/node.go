@@ -35,10 +35,7 @@ func (*ErrorNode) isSyntaxNode() {} // An error node.
 // leaf
 func NewLeaf(kind SyntaxKind, text string) *SyntaxNode {
 	return &SyntaxNode{
-		repr: &LeafNode{
-			kind: kind,
-			text: text,
-		},
+		repr: NewLeafNode(kind, text),
 	}
 }
 
@@ -47,10 +44,7 @@ func NewLeaf(kind SyntaxKind, text string) *SyntaxNode {
 // inner
 func NewInner(kind SyntaxKind, children []*SyntaxNode) *SyntaxNode {
 	return &SyntaxNode{
-		repr: &InnerNode{
-			kind:     kind,
-			children: children,
-		},
+		repr: NewInnerNode(kind, children),
 	}
 }
 
@@ -59,10 +53,7 @@ func NewInner(kind SyntaxKind, children []*SyntaxNode) *SyntaxNode {
 // error
 func NewError(error *SyntaxError, text string) *SyntaxNode {
 	return &SyntaxNode{
-		repr: &ErrorNode{
-			error: error,
-			text:  text,
-		},
+		repr: NewErrorNode(error, text),
 	}
 }
 
@@ -855,10 +846,10 @@ func (node *SyntaxError) clone() *SyntaxError {
 // children, parent and siblings.
 //
 // **Note that all sibling and leaf accessors skip over trivia!**
-type LinkedNode[T any] struct {
+type LinkedNode struct {
 	node *SyntaxNode
 	// This node's parent.
-	parent option.Option[*LinkedNode[T]]
+	parent option.Option[*LinkedNode]
 	// The index of this node in its parent's children list.
 	index uint
 	// The absolute byte offset of this node in the source file.
@@ -868,30 +859,30 @@ type LinkedNode[T any] struct {
 // Start a new traversal at a root node.
 //
 // new
-func NewLinkedNode[T any](root *SyntaxNode) *LinkedNode[T] {
-	return &LinkedNode[T]{
+func NewLinkedNode(root *SyntaxNode) *LinkedNode {
+	return &LinkedNode{
 		node:   root,
-		parent: option.None[*LinkedNode[T]](),
+		parent: option.None[*LinkedNode](),
 		index:  0,
 		offset: 0,
 	}
 }
 
 // Get the contained syntax node.
-func (link *LinkedNode[T]) get() *SyntaxNode {
+func (link *LinkedNode) get() *SyntaxNode {
 	return link.node
 }
 
 // The byte range of this node in the source file.
 //
 // range
-func (link *LinkedNode[T]) _range() ranges.Range {
+func (link *LinkedNode) _range() ranges.Range {
 	return ranges.NewRange(uint64(link.offset), uint64(link.offset+link.node.len()))
 }
 
 // An iterator over this node's children.
-func (link *LinkedNode[T]) children() *LinkedChildren[T] {
-	return &LinkedChildren[T]{
+func (link *LinkedNode) children() *LinkedChildren {
+	return &LinkedChildren{
 		parent:    link.clone(),
 		_children: link.node.children(), // NOTE: was `iter`
 		front:     link.offset,
@@ -900,7 +891,7 @@ func (link *LinkedNode[T]) children() *LinkedChildren[T] {
 }
 
 // Find a descendant with the given span.
-func (link *LinkedNode[T]) find(span Span) option.Option[*LinkedNode[T]] {
+func (link *LinkedNode) find(span Span) option.Option[*LinkedNode] {
 	// NOTE: was `link.span()`
 	if link.node.span() == span {
 		return option.Some(link.clone())
@@ -911,7 +902,7 @@ func (link *LinkedNode[T]) find(span Span) option.Option[*LinkedNode[T]] {
 		// descendants. Therefore, we can bail out early if the target span's
 		// number is smaller than our number.
 		if span.number() < inner.span.number() {
-			return option.None[*LinkedNode[T]]()
+			return option.None[*LinkedNode]()
 		}
 
 		children := link.children()
@@ -933,11 +924,11 @@ func (link *LinkedNode[T]) find(span Span) option.Option[*LinkedNode[T]] {
 		}
 	}
 
-	return option.None[*LinkedNode[T]]()
+	return option.None[*LinkedNode]()
 }
 
-func (link *LinkedNode[T]) clone() *LinkedNode[T] {
-	return &LinkedNode[T]{
+func (link *LinkedNode) clone() *LinkedNode {
+	return &LinkedNode{
 		node:   link.node.clone(),
 		parent: link.parent.Clone(), // TODO: implement deep clone?
 		index:  0,
@@ -948,22 +939,22 @@ func (link *LinkedNode[T]) clone() *LinkedNode[T] {
 // Access to parents and siblings.
 
 // Get the first previous non-trivia sibling node.
-func (link *LinkedNode[T]) prev_sibling() option.Option[*LinkedNode[T]] {
+func (link *LinkedNode) prev_sibling() option.Option[*LinkedNode] {
 	parent, ok := link.parent.Get()
 	if !ok {
-		return option.None[*LinkedNode[T]]()
+		return option.None[*LinkedNode]()
 	}
 	index, fail := overflow.SubUint64(uint64(link.index), 1)
 	if fail { // underflow
-		return option.None[*LinkedNode[T]]()
+		return option.None[*LinkedNode]()
 	}
 	children := parent.node.children()
 	if int(index) >= len(children) {
-		return option.None[*LinkedNode[T]]()
+		return option.None[*LinkedNode]()
 	}
 	node := children[index]
 	offset := link.offset - node.len()
-	prev := &LinkedNode[T]{
+	prev := &LinkedNode{
 		node:   node,
 		parent: link.parent.Clone(), // TODO: implement deep clone?
 		index:  uint(index),
@@ -978,22 +969,22 @@ func (link *LinkedNode[T]) prev_sibling() option.Option[*LinkedNode[T]] {
 }
 
 // Get the next non-trivia sibling node.
-func (link *LinkedNode[T]) next_sibling() option.Option[*LinkedNode[T]] {
+func (link *LinkedNode) next_sibling() option.Option[*LinkedNode] {
 	parent, ok := link.parent.Get()
 	if !ok {
-		return option.None[*LinkedNode[T]]()
+		return option.None[*LinkedNode]()
 	}
 	index, fail := overflow.AddUint64(uint64(link.index), 1)
 	if fail { // overflow
-		return option.None[*LinkedNode[T]]()
+		return option.None[*LinkedNode]()
 	}
 	children := parent.node.children()
 	if int(index) >= len(children) {
-		return option.None[*LinkedNode[T]]()
+		return option.None[*LinkedNode]()
 	}
 	node := children[index]
 	offset := link.offset + link.node.len()
-	next := &LinkedNode[T]{
+	next := &LinkedNode{
 		node:   node,
 		parent: link.parent.Clone(), // TODO: implement deep clone?
 		index:  uint(index),
@@ -1008,7 +999,7 @@ func (link *LinkedNode[T]) next_sibling() option.Option[*LinkedNode[T]] {
 }
 
 // Get the kind of this node's parent.
-func (link *LinkedNode[T]) parent_kind() option.Option[SyntaxKind] {
+func (link *LinkedNode) parent_kind() option.Option[SyntaxKind] {
 	parent, ok := link.parent.Get()
 	if !ok {
 		return option.None[SyntaxKind]()
@@ -1017,7 +1008,7 @@ func (link *LinkedNode[T]) parent_kind() option.Option[SyntaxKind] {
 }
 
 // Get the kind of this node's first previous non-trivia sibling.
-func (link *LinkedNode[T]) prev_sibling_kind() option.Option[SyntaxKind] {
+func (link *LinkedNode) prev_sibling_kind() option.Option[SyntaxKind] {
 	prev_sibling, ok := link.prev_sibling().Get()
 	if !ok {
 		return option.None[SyntaxKind]()
@@ -1026,7 +1017,7 @@ func (link *LinkedNode[T]) prev_sibling_kind() option.Option[SyntaxKind] {
 }
 
 // Get the kind of this node's next non-trivia sibling.
-func (link *LinkedNode[T]) next_sibling_kind() option.Option[SyntaxKind] {
+func (link *LinkedNode) next_sibling_kind() option.Option[SyntaxKind] {
 	next_sibling, ok := link.next_sibling().Get()
 	if !ok {
 		return option.None[SyntaxKind]()
@@ -1047,7 +1038,7 @@ const (
 // Access to leaves.
 
 // Get the rightmost non-trivia leaf before this node.
-func (link *LinkedNode[T]) prev_leaf() option.Option[*LinkedNode[T]] {
+func (link *LinkedNode) prev_leaf() option.Option[*LinkedNode] {
 	node := link.clone()
 	for {
 		prev, ok := node.prev_sibling().Get()
@@ -1059,11 +1050,14 @@ func (link *LinkedNode[T]) prev_leaf() option.Option[*LinkedNode[T]] {
 		}
 		node = prev
 	}
-	return link.parent.MustGet().prev_leaf()
+	if parent, ok := link.parent.Get(); ok {
+		return parent.prev_leaf()
+	}
+	return option.None[*LinkedNode]()
 }
 
 // Find the leftmost contained non-trivia leaf.
-func (link *LinkedNode[T]) leftmost_leaf() option.Option[*LinkedNode[T]] {
+func (link *LinkedNode) leftmost_leaf() option.Option[*LinkedNode] {
 	if link.node.is_leaf() && !link.node.kind().is_trivia() && !link.node.kind().is_error() {
 		return option.Some(link.clone())
 	}
@@ -1074,11 +1068,11 @@ func (link *LinkedNode[T]) leftmost_leaf() option.Option[*LinkedNode[T]] {
 		}
 	}
 
-	return option.None[*LinkedNode[T]]()
+	return option.None[*LinkedNode]()
 }
 
 // Get the leaf immediately before the specified byte offset.
-func (link *LinkedNode[T]) leaf_before(cursor uint) option.Option[*LinkedNode[T]] {
+func (link *LinkedNode) leaf_before(cursor uint) option.Option[*LinkedNode] {
 	if len(link.node.children()) == 0 && cursor <= link.offset+link.node.len() {
 		return option.Some(link.clone())
 	}
@@ -1093,11 +1087,11 @@ func (link *LinkedNode[T]) leaf_before(cursor uint) option.Option[*LinkedNode[T]
 		offset += length
 	}
 
-	return option.None[*LinkedNode[T]]()
+	return option.None[*LinkedNode]()
 }
 
 // Get the leaf after the specified byte offset.
-func (link *LinkedNode[T]) leaf_after(cursor uint) option.Option[*LinkedNode[T]] {
+func (link *LinkedNode) leaf_after(cursor uint) option.Option[*LinkedNode] {
 	if len(link.node.children()) == 0 && cursor < link.offset+link.node.len() {
 		return option.Some(link.clone())
 	}
@@ -1111,11 +1105,11 @@ func (link *LinkedNode[T]) leaf_after(cursor uint) option.Option[*LinkedNode[T]]
 		offset += length
 	}
 
-	return option.None[*LinkedNode[T]]()
+	return option.None[*LinkedNode]()
 }
 
 // Get the leaf at the specified byte offset.
-func (link *LinkedNode[T]) leaf_at(cursor uint, side Side) option.Option[*LinkedNode[T]] {
+func (link *LinkedNode) leaf_at(cursor uint, side Side) option.Option[*LinkedNode] {
 	switch side {
 	case SideBefore:
 		return link.leaf_before(cursor)
@@ -1126,7 +1120,7 @@ func (link *LinkedNode[T]) leaf_at(cursor uint, side Side) option.Option[*Linked
 }
 
 // Find the rightmost contained non-trivia leaf.
-func (link *LinkedNode[T]) rightmost_leaf() option.Option[*LinkedNode[T]] {
+func (link *LinkedNode) rightmost_leaf() option.Option[*LinkedNode] {
 	if link.node.is_leaf() && !link.node.kind().is_trivia() {
 		return option.Some(link.clone())
 	}
@@ -1137,11 +1131,11 @@ func (link *LinkedNode[T]) rightmost_leaf() option.Option[*LinkedNode[T]] {
 		}
 	}
 
-	return option.None[*LinkedNode[T]]()
+	return option.None[*LinkedNode]()
 }
 
 // Get the leftmost non-trivia leaf after this node.
-func (link *LinkedNode[T]) next_leaf() option.Option[*LinkedNode[T]] {
+func (link *LinkedNode) next_leaf() option.Option[*LinkedNode] {
 	node := link.clone()
 	for {
 		next, ok := node.next_sibling().Get()
@@ -1156,26 +1150,26 @@ func (link *LinkedNode[T]) next_leaf() option.Option[*LinkedNode[T]] {
 	return link.parent.MustGet().next_leaf()
 }
 
-func (link *LinkedNode[T]) String() string {
+func (link *LinkedNode) String() string {
 	return link.node.String()
 }
 
 // --- [ LinkedChildren ] ------------------------------------------------------
 
 // An iterator over the children of a linked node.
-type LinkedChildren[T any] struct {
-	parent    *LinkedNode[T]
+type LinkedChildren struct {
+	parent    *LinkedNode
 	_children []*SyntaxNode // NOTE: was `iter`
 	front     uint
 	back      uint
 }
 
-func (l *LinkedChildren[T]) Children() iter.Seq2[int, *LinkedNode[T]] {
-	return func(yield func(int, *LinkedNode[T]) bool) {
+func (l *LinkedChildren) Children() iter.Seq2[int, *LinkedNode] {
+	return func(yield func(int, *LinkedNode) bool) {
 		for index, child := range l._children {
 			offset := l.front
 			l.front += child.len()
-			link := &LinkedNode[T]{
+			link := &LinkedNode{
 				node:   child,
 				parent: option.Some(l.parent.clone()),
 				index:  uint(index),
@@ -1188,13 +1182,13 @@ func (l *LinkedChildren[T]) Children() iter.Seq2[int, *LinkedNode[T]] {
 	}
 }
 
-func (l *LinkedChildren[T]) RevChildren() iter.Seq2[int, *LinkedNode[T]] {
-	return func(yield func(int, *LinkedNode[T]) bool) {
+func (l *LinkedChildren) RevChildren() iter.Seq2[int, *LinkedNode] {
+	return func(yield func(int, *LinkedNode) bool) {
 		for index := len(l._children) - 1; index >= 0; index-- {
 			child := l._children[index]
 			offset := l.back
 			l.back -= child.len()
-			link := &LinkedNode[T]{
+			link := &LinkedNode{
 				node:   child,
 				parent: option.Some(l.parent.clone()),
 				index:  uint(index),
