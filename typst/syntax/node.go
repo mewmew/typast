@@ -931,8 +931,8 @@ func (link *LinkedNode) clone() *LinkedNode {
 	return &LinkedNode{
 		node:   link.node.clone(),
 		parent: link.parent.Clone(), // TODO: implement deep clone?
-		index:  0,
-		offset: 0,
+		index:  link.index,
+		offset: link.offset,
 	}
 }
 
@@ -1147,7 +1147,10 @@ func (link *LinkedNode) next_leaf() option.Option[*LinkedNode] {
 		}
 		node = next
 	}
-	return link.parent.MustGet().next_leaf()
+	if parent, ok := link.parent.Get(); ok {
+		return parent.next_leaf()
+	}
+	return option.None[*LinkedNode]()
 }
 
 func (link *LinkedNode) String() string {
@@ -1225,6 +1228,6 @@ func printTree(n *SyntaxNode, depth int) {
 			printTree(child, depth)
 		}
 	case *ErrorNode:
-		fmt.Printf("%serror\n", pad)
+		fmt.Printf("%serror (text=%q) error=%q\n", pad, repr.text, repr.error.message)
 	}
 }

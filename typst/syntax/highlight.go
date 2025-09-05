@@ -1,6 +1,8 @@
 package syntax
 
-import "github.com/mewmew/typast/internal/option"
+import (
+	"github.com/mewmew/typast/internal/option"
+)
 
 // A syntax highlighting tag.
 type Tag uint8
@@ -543,7 +545,6 @@ func highlight_ident(node *LinkedNode) option.Option[Tag] {
 			}
 		}
 	}
-
 
 	// Are we (or an ancestor field access) directly after a hash.
 	if prev, ok := ancestor.prev_leaf().Get(); ok {

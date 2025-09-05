@@ -16,7 +16,7 @@ type RangeTag struct {
 func test(t *testing.T, text string, want []RangeTag) {
 	var tags vector.Vector[RangeTag]
 	root := parse(text)
-	printRoot(root) // TODO: remove debug output
+	//printRoot(root)
 	highlight_tree(&tags, NewLinkedNode(root))
 	got := []RangeTag(tags)
 	if !reflect.DeepEqual(want, got) {
@@ -35,8 +35,6 @@ func highlight_tree(tags *vector.Vector[RangeTag], node *LinkedNode) {
 }
 
 func TestHighlighting(t *testing.T) {
-	// TODO: enable test cases
-	/*
 	test(
 		t,
 		"= *AB*",
@@ -45,10 +43,7 @@ func TestHighlighting(t *testing.T) {
 			{r: ranges.NewRange(2, 6), tag: Tag_Strong},
 		},
 	)
-	*/
 
-	// TODO: enable test cases
-	/*
 	test(t,
 		"#f(x + 1)",
 		[]RangeTag{
@@ -60,7 +55,6 @@ func TestHighlighting(t *testing.T) {
 			{r: ranges.NewRange(8, 9), tag: Tag_Punctuation},
 		},
 	)
-	*/
 
 	test(t,
 		"#let f(x) = x",
