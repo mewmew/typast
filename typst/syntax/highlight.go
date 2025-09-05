@@ -1,6 +1,8 @@
 package syntax
 
 import (
+	"strings"
+
 	"github.com/mewmew/typast/internal/option"
 )
 
@@ -589,50 +591,53 @@ func Node_is_ident(node *LinkedNode) bool {
 	return false
 }
 
-/*
 // Highlight a node to an HTML `code` element.
 //
 // This uses these [CSS classes for categories](Tag_css_class).
-pub fn highlight_html(root: &SyntaxNode) -> String {
-	let mut buf = String::from("<code>");
-	let node = LinkedNode::new(root);
-	highlight_html_impl(&mut buf, &node);
-	buf.push_str("</code>");
-	buf
+func highlight_html(root *SyntaxNode) string {
+	buf := &strings.Builder{}
+	buf.WriteString("<code>")
+	node := NewLinkedNode(root)
+	highlight_html_impl(buf, node)
+	buf.WriteString("</code>")
+	return buf.String()
 }
 
 // Highlight one source node, emitting HTML.
-fn highlight_html_impl(html: &mut String, node: &LinkedNode) {
-	let mut span = false;
-	if let Some(tag) = highlight(node)
-		&& tag != Tag_Error
-	{
-		span = true;
-		html.push_str("<span class=\"");
-		html.push_str(tag.css_class());
-		html.push_str("\">");
+func highlight_html_impl(html *strings.Builder, node *LinkedNode) {
+	span := false
+	if tag, ok := highlight(node).Get(); ok && tag != Tag_Error {
+		span = true
+		html.WriteString("<span class=\"")
+		html.WriteString(tag.css_class())
+		html.WriteString("\">")
 	}
 
-	let text = node.text();
-	if !text.is_empty() {
-		for c in text.chars() {
-			match c {
-				'<' => html.push_str("&lt;"),
-				'>' => html.push_str("&gt;"),
-				'&' => html.push_str("&amp;"),
-				'\'' => html.push_str("&#39;"),
-				'"' => html.push_str("&quot;"),
-				_ => html.push(c),
+	text := node.node.text()
+	if len(text) > 0 {
+		for _, c := range text {
+			switch c {
+			case '<':
+				html.WriteString("&lt;")
+			case '>':
+				html.WriteString("&gt;")
+			case '&':
+				html.WriteString("&amp;")
+			case '\'':
+				html.WriteString("&#39;")
+			case '"':
+				html.WriteString("&quot;")
+			default:
+				html.WriteRune(c)
 			}
 		}
 	} else {
-		for child in node.children() {
-			highlight_html_impl(html, &child);
+		for _, child := range node.children().Children() {
+			highlight_html_impl(html, child)
 		}
 	}
 
 	if span {
-		html.push_str("</span>");
+		html.WriteString("</span>")
 	}
 }
-*/

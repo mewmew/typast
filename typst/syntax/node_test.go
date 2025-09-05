@@ -1,5 +1,6 @@
 package syntax
 
+// TODO: uncomment
 /*
 func TestLinkedNode() {
 	source := Source_detached("#set text(12pt, red)")
