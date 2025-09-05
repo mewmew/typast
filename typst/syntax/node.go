@@ -17,7 +17,7 @@ import (
 
 // A node in the untyped syntax tree.
 type SyntaxNode struct {
-	repr Repr
+	Repr Repr
 }
 
 // The three internal representations.
@@ -35,7 +35,7 @@ func (*ErrorNode) isSyntaxNode() {} // An error node.
 // leaf
 func NewLeaf(kind SyntaxKind, text string) *SyntaxNode {
 	return &SyntaxNode{
-		repr: NewLeafNode(kind, text),
+		Repr: NewLeafNode(kind, text),
 	}
 }
 
@@ -44,7 +44,7 @@ func NewLeaf(kind SyntaxKind, text string) *SyntaxNode {
 // inner
 func NewInner(kind SyntaxKind, children []*SyntaxNode) *SyntaxNode {
 	return &SyntaxNode{
-		repr: NewInnerNode(kind, children),
+		Repr: NewInnerNode(kind, children),
 	}
 }
 
@@ -53,7 +53,7 @@ func NewInner(kind SyntaxKind, children []*SyntaxNode) *SyntaxNode {
 // error
 func NewError(error *SyntaxError, text string) *SyntaxNode {
 	return &SyntaxNode{
-		repr: NewErrorNode(error, text),
+		Repr: NewErrorNode(error, text),
 	}
 }
 
@@ -67,21 +67,21 @@ func SyntaxNode_placeholder(kind SyntaxKind) *SyntaxNode {
 		panic("cannot create error placeholder")
 	}
 	return &SyntaxNode{
-		repr: &LeafNode{
-			kind: kind,
-			text: "",
-			span: Span_detached(),
+		Repr: &LeafNode{
+			Kind: kind,
+			Text: "",
+			Span: Span_detached(),
 		},
 	}
 }
 
 // The type of the node.
 func (node *SyntaxNode) kind() SyntaxKind {
-	switch repr := node.repr.(type) {
+	switch repr := node.Repr.(type) {
 	case *LeafNode:
-		return repr.kind
+		return repr.Kind
 	case *InnerNode:
-		return repr.kind
+		return repr.Kind
 	case *ErrorNode:
 		return SyntaxKindError
 	}
@@ -95,11 +95,11 @@ func (node *SyntaxNode) is_empty() bool {
 
 // The byte length of the node in the source text.
 func (node *SyntaxNode) len() uint {
-	switch repr := node.repr.(type) {
+	switch repr := node.Repr.(type) {
 	case *LeafNode:
 		return repr.len()
 	case *InnerNode:
-		return repr.len
+		return repr.Len
 	case *ErrorNode:
 		return repr.len()
 	}
@@ -108,13 +108,13 @@ func (node *SyntaxNode) len() uint {
 
 // The span of the node.
 func (node *SyntaxNode) span() Span {
-	switch repr := node.repr.(type) {
+	switch repr := node.Repr.(type) {
 	case *LeafNode:
-		return repr.span
+		return repr.Span
 	case *InnerNode:
-		return repr.span
+		return repr.Span
 	case *ErrorNode:
-		return repr.error.span
+		return repr.Error.Span
 	}
 	panic("unreachable")
 }
@@ -123,13 +123,13 @@ func (node *SyntaxNode) span() Span {
 //
 // Returns the empty string if this is an inner node.
 func (node *SyntaxNode) text() string {
-	switch repr := node.repr.(type) {
+	switch repr := node.Repr.(type) {
 	case *LeafNode:
-		return repr.text
+		return repr.Text
 	case *InnerNode:
 		return ""
 	case *ErrorNode:
-		return repr.text
+		return repr.Text
 	}
 	panic("unreachable")
 }
@@ -138,12 +138,12 @@ func (node *SyntaxNode) text() string {
 //
 // Builds the string if this is an inner node.
 func (node *SyntaxNode) into_text() string {
-	switch repr := node.repr.(type) {
+	switch repr := node.Repr.(type) {
 	case *LeafNode:
-		return repr.text
+		return repr.Text
 	case *InnerNode:
 		buf := &strings.Builder{}
-		for i, child := range repr.children {
+		for i, child := range repr.Children {
 			if i != 0 {
 				buf.WriteString(" ")
 			}
@@ -151,31 +151,31 @@ func (node *SyntaxNode) into_text() string {
 		}
 		return buf.String()
 	case *ErrorNode:
-		return repr.text
+		return repr.Text
 	}
 	panic("unreachable")
 }
 
 // The node's children.
 func (node *SyntaxNode) children() []*SyntaxNode {
-	switch repr := node.repr.(type) {
+	switch repr := node.Repr.(type) {
 	case *LeafNode:
 		return nil
 	case *ErrorNode:
 		return nil
 	case *InnerNode:
-		return repr.children
+		return repr.Children
 	}
 	panic("unreachable")
 }
 
 // Whether the node or its children contain an error.
 func (node *SyntaxNode) erroneous() bool {
-	switch repr := node.repr.(type) {
+	switch repr := node.Repr.(type) {
 	case *LeafNode:
 		return false
 	case *InnerNode:
-		return repr.erroneous
+		return repr.Erroneous
 	case *ErrorNode:
 		return true
 	}
@@ -188,9 +188,9 @@ func (node *SyntaxNode) errors() []*SyntaxError {
 		return nil
 	}
 
-	switch repr := node.repr.(type) {
+	switch repr := node.Repr.(type) {
 	case *ErrorNode:
-		return []*SyntaxError{repr.error.clone()}
+		return []*SyntaxError{repr.Error.clone()}
 	default:
 		var error_nodes []*SyntaxNode
 		for _, child := range node.children() {
@@ -208,7 +208,7 @@ func (node *SyntaxNode) errors() []*SyntaxError {
 
 // Add a user-presentable hint if this is an error node.
 func (node *SyntaxNode) hint(hint string) {
-	switch repr := node.repr.(type) {
+	switch repr := node.Repr.(type) {
 	case *ErrorNode:
 		repr.hint(hint)
 	}
@@ -216,33 +216,33 @@ func (node *SyntaxNode) hint(hint string) {
 
 // Set a synthetic span for the node and all its descendants.
 func (node *SyntaxNode) synthesize(span Span) {
-	switch repr := node.repr.(type) {
+	switch repr := node.Repr.(type) {
 	case *LeafNode:
-		repr.span = span
+		repr.Span = span
 	case *InnerNode:
 		repr.synthesize(span)
 	case *ErrorNode:
-		repr.error.span = span
+		repr.Error.Span = span
 	}
 }
 
 // Whether the two syntax nodes are the same apart from spans.
 func (node *SyntaxNode) spanless_eq(other *SyntaxNode) bool {
-	switch repr := node.repr.(type) {
+	switch repr := node.Repr.(type) {
 	case *LeafNode:
-		_other, ok := other.repr.(*LeafNode)
+		_other, ok := other.Repr.(*LeafNode)
 		if !ok {
 			return false
 		}
 		return repr.spanless_eq(_other)
 	case *InnerNode:
-		_other, ok := other.repr.(*InnerNode)
+		_other, ok := other.Repr.(*InnerNode)
 		if !ok {
 			return false
 		}
 		return repr.spanless_eq(_other)
 	case *ErrorNode:
-		_other, ok := other.repr.(*ErrorNode)
+		_other, ok := other.Repr.(*ErrorNode)
 		if !ok {
 			return false
 		}
@@ -253,7 +253,7 @@ func (node *SyntaxNode) spanless_eq(other *SyntaxNode) bool {
 
 func (node *SyntaxNode) clone() *SyntaxNode {
 	return &SyntaxNode{
-		repr: node.repr.clone(),
+		Repr: node.Repr.clone(),
 	}
 }
 
@@ -264,11 +264,11 @@ func (node *SyntaxNode) convert_to_kind(kind SyntaxKind) {
 	if kind.is_error() {
 		panic("error kind in leaf node")
 	}
-	switch repr := node.repr.(type) {
+	switch repr := node.Repr.(type) {
 	case *LeafNode:
-		repr.kind = kind
+		repr.Kind = kind
 	case *InnerNode:
-		repr.kind = kind
+		repr.Kind = kind
 	case *ErrorNode:
 		panic("cannot convert error")
 	}
@@ -308,13 +308,13 @@ func (node *SyntaxNode) numberize(id FileId, within ranges.Range) error {
 	}
 
 	mid := Span_from_number(id, (within.Start+within.End)/2).MustGet()
-	switch repr := node.repr.(type) {
+	switch repr := node.Repr.(type) {
 	case *LeafNode:
-		repr.span = mid
+		repr.Span = mid
 	case *InnerNode:
 		repr.numberize(id, option.None[ranges.Range](), within)
 	case *ErrorNode:
-		repr.error.span = mid
+		repr.Error.Span = mid
 	}
 
 	return nil
@@ -322,7 +322,7 @@ func (node *SyntaxNode) numberize(id FileId, within ranges.Range) error {
 
 // Whether this is a leaf node.
 func (node *SyntaxNode) is_leaf() bool {
-	_, ok := node.repr.(*LeafNode)
+	_, ok := node.Repr.(*LeafNode)
 	return ok
 }
 
@@ -330,13 +330,13 @@ func (node *SyntaxNode) is_leaf() bool {
 //
 // descendants
 func (node *SyntaxNode) descendants() uint {
-	switch repr := node.repr.(type) {
+	switch repr := node.Repr.(type) {
 	case *LeafNode:
 		return 1
 	case *ErrorNode:
 		return 1
 	case *InnerNode:
-		return repr.descendants
+		return repr.Descendants
 	}
 	panic("unreachable")
 }
@@ -345,7 +345,7 @@ func (node *SyntaxNode) descendants() uint {
 //
 // May have mutated the children if it returns `Err(_)`.
 func (node *SyntaxNode) replace_children(_range ranges.Range, replacement []*SyntaxNode) error {
-	if inner, ok := node.repr.(*InnerNode); ok {
+	if inner, ok := node.Repr.(*InnerNode); ok {
 		return inner.replace_children(_range, replacement)
 	}
 	return nil
@@ -353,7 +353,7 @@ func (node *SyntaxNode) replace_children(_range ranges.Range, replacement []*Syn
 
 // Update this node after changes were made to one of its children.
 func (node *SyntaxNode) update_parent(prev_len, new_len, prev_descendants, new_descendants uint) {
-	inner, ok := node.repr.(*InnerNode)
+	inner, ok := node.Repr.(*InnerNode)
 	if !ok {
 		return
 	}
@@ -362,19 +362,19 @@ func (node *SyntaxNode) update_parent(prev_len, new_len, prev_descendants, new_d
 
 // The upper bound of assigned numbers in this subtree.
 func (node *SyntaxNode) upper() uint64 {
-	switch repr := node.repr.(type) {
+	switch repr := node.Repr.(type) {
 	case *LeafNode:
-		return repr.span.number() + 1
+		return repr.Span.number() + 1
 	case *InnerNode:
-		return repr.upper
+		return repr.Upper
 	case *ErrorNode:
-		return repr.error.span.number() + 1
+		return repr.Error.Span.number() + 1
 	}
 	panic("unreachable")
 }
 
 func (node *SyntaxNode) String() string {
-	switch repr := node.repr.(type) {
+	switch repr := node.Repr.(type) {
 	case *LeafNode:
 		return repr.String()
 	case *InnerNode:
@@ -387,7 +387,7 @@ func (node *SyntaxNode) String() string {
 
 func SyntaxNode_Default() *SyntaxNode {
 	return &SyntaxNode{
-		repr: NewLeafNode(SyntaxKindEnd, ""),
+		Repr: NewLeafNode(SyntaxKindEnd, ""),
 	}
 }
 
@@ -399,11 +399,11 @@ func SyntaxNode_Default() *SyntaxNode {
 type LeafNode struct {
 	// What kind of node this is (each kind would have its own struct in a
 	// strongly typed AST).
-	kind SyntaxKind
+	Kind SyntaxKind
 	// The source text of the node.
-	text string
+	Text string
 	// The node's span.
-	span Span
+	Span Span
 }
 
 // Create a new leaf node.
@@ -414,31 +414,31 @@ func NewLeafNode(kind SyntaxKind, text string) *LeafNode {
 		panic("error kind in leaf node")
 	}
 	return &LeafNode{
-		kind: kind,
-		text: text,
-		span: Span_detached(),
+		Kind: kind,
+		Text: text,
+		Span: Span_detached(),
 	}
 }
 
 // The byte length of the node in the source text.
 func (node *LeafNode) len() uint {
-	return uint(len(node.text))
+	return uint(len(node.Text))
 }
 
 // Whether the two leaf nodes are the same apart from spans.
 func (node *LeafNode) spanless_eq(other *LeafNode) bool {
-	return node.kind == other.kind && node.text == other.text
+	return node.Kind == other.Kind && node.Text == other.Text
 }
 
 func (node *LeafNode) String() string {
-	return fmt.Sprintf("%v: %v", node.kind, node.text)
+	return fmt.Sprintf("%v: %v", node.Kind, node.Text)
 }
 
 func (node *LeafNode) clone() Repr {
 	return &LeafNode{
-		kind: node.kind,
-		text: node.text,
-		span: node.span,
+		Kind: node.Kind,
+		Text: node.Text,
+		Span: node.Span,
 	}
 }
 
@@ -450,19 +450,19 @@ func (node *LeafNode) clone() Repr {
 type InnerNode struct {
 	// What kind of node this is (each kind would have its own struct in a
 	// strongly typed AST).
-	kind SyntaxKind
+	Kind SyntaxKind
 	// The byte length of the node in the source.
-	len uint
+	Len uint
 	// The node's span.
-	span Span
+	Span Span
 	// The number of nodes in the whole subtree, including this node.
-	descendants uint
+	Descendants uint
 	// Whether this node or any of its children are erroneous.
-	erroneous bool
+	Erroneous bool
 	// The upper bound of this node's numbering range.
-	upper uint64
+	Upper uint64
 	// This node's children, losslessly make up this node.
-	children []*SyntaxNode
+	Children []*SyntaxNode
 }
 
 // Create a new inner node with the given kind and children.
@@ -486,21 +486,21 @@ func NewInnerNode(kind SyntaxKind, children []*SyntaxNode) *InnerNode {
 	}
 
 	return &InnerNode{
-		kind:        kind,
-		len:         length,
-		span:        Span_detached(),
-		descendants: descendants,
-		erroneous:   erroneous,
-		upper:       0,
-		children:    children,
+		Kind:        kind,
+		Len:         length,
+		Span:        Span_detached(),
+		Descendants: descendants,
+		Erroneous:   erroneous,
+		Upper:       0,
+		Children:    children,
 	}
 }
 
 // Set a synthetic span for the node and all its descendants.
 func (node *InnerNode) synthesize(span Span) {
-	node.span = span
-	node.upper = span.number()
-	for _, child := range node.children {
+	node.Span = span
+	node.Upper = span.number()
+	for _, child := range node.Children {
 		child.synthesize(span)
 	}
 }
@@ -514,11 +514,11 @@ func (node *InnerNode) numberize(id FileId, _range option.Option[ranges.Range], 
 		if _range.IsEmpty() {
 			return nil
 		}
-		for _, child := range node.children[_range.Start:_range.End] {
+		for _, child := range node.Children[_range.Start:_range.End] {
 			descendants += child.descendants()
 		}
 	} else {
-		descendants = node.descendants
+		descendants = node.Descendants
 	}
 
 	// Determine the distance between two neighbouring assigned numbers. If
@@ -527,7 +527,7 @@ func (node *InnerNode) numberize(id FileId, _range option.Option[ranges.Range], 
 	space := within.End - within.Start
 	stride := space / (2 * uint64(descendants))
 	if stride == 0 {
-		stride = space / uint64(node.descendants)
+		stride = space / uint64(node.Descendants)
 		if stride == 0 {
 			return ErrUnnumberable
 		}
@@ -537,20 +537,20 @@ func (node *InnerNode) numberize(id FileId, _range option.Option[ranges.Range], 
 	start := within.Start
 	if !_range.IsPresent() {
 		end := start + stride
-		node.span = Span_from_number(id, (start+end)/2).MustGet()
-		node.upper = within.End
+		node.Span = Span_from_number(id, (start+end)/2).MustGet()
+		node.Upper = within.End
 		start = end
 	}
 
 	// Number the children.
-	length := len(node.children)
+	length := len(node.Children)
 	_range_start := uint64(0)
 	_range_end := uint64(length)
 	if _range, ok := _range.Get(); ok {
 		_range_start = _range.Start
 		_range_end = _range.End
 	}
-	for _, child := range node.children[_range_start:_range_end] {
+	for _, child := range node.Children[_range_start:_range_end] {
 		end := start + uint64(child.descendants())*stride
 		child.numberize(id, ranges.NewRange(start, end))
 		start = end
@@ -561,23 +561,23 @@ func (node *InnerNode) numberize(id FileId, _range option.Option[ranges.Range], 
 
 // Whether the two inner nodes are the same apart from spans.
 func (node *InnerNode) spanless_eq(other *InnerNode) bool {
-	if node.kind != other.kind {
+	if node.Kind != other.Kind {
 		return false
 	}
-	if node.len != other.len {
+	if node.Len != other.Len {
 		return false
 	}
-	if node.descendants != other.descendants {
+	if node.Descendants != other.Descendants {
 		return false
 	}
-	if node.erroneous != other.erroneous {
+	if node.Erroneous != other.Erroneous {
 		return false
 	}
-	if len(node.children) != len(other.children) {
+	if len(node.Children) != len(other.Children) {
 		return false
 	}
-	for i, a := range node.children {
-		b := other.children[i]
+	for i, a := range node.Children {
+		b := other.Children[i]
 		if !a.spanless_eq(b) {
 			return false
 		}
@@ -589,20 +589,20 @@ func (node *InnerNode) spanless_eq(other *InnerNode) bool {
 //
 // May have mutated the children if it returns `Err(_)`.
 func (node *InnerNode) replace_children(_range ranges.Range, replacement []*SyntaxNode) error {
-	id, ok := node.span.id().Get()
+	id, ok := node.Span.id().Get()
 	if !ok {
 		return ErrUnnumberable
 	}
 	replacement_range := ranges.NewRange(0, uint64(len(replacement)))
 
 	// Trim off common prefix.
-	for _range.Start < _range.End && replacement_range.Start < replacement_range.End && node.children[_range.Start].spanless_eq(replacement[replacement_range.Start]) {
+	for _range.Start < _range.End && replacement_range.Start < replacement_range.End && node.Children[_range.Start].spanless_eq(replacement[replacement_range.Start]) {
 		_range.Start += 1
 		replacement_range.Start += 1
 	}
 
 	// Trim off common suffix.
-	for _range.Start < _range.End && replacement_range.Start < replacement_range.End && node.children[_range.End-1].spanless_eq(replacement[replacement_range.End-1]) {
+	for _range.Start < _range.End && replacement_range.Start < replacement_range.End && node.Children[_range.End-1].spanless_eq(replacement[replacement_range.End-1]) {
 		_range.End -= 1
 		replacement_range.End -= 1
 	}
@@ -610,22 +610,22 @@ func (node *InnerNode) replace_children(_range ranges.Range, replacement []*Synt
 	// TODO: double-check that conversion from Rust to Go was correct.
 	replacement_vec := replacement
 	replacement = replacement_vec[replacement_range.Start:replacement_range.End]
-	superseded := node.children[_range.Start:_range.End]
+	superseded := node.Children[_range.Start:_range.End]
 
 	// Compute the new byte length.
 	for _, r := range replacement {
-		node.len += r.len()
+		node.Len += r.len()
 	}
 	for _, s := range superseded {
-		node.len -= s.len()
+		node.Len -= s.len()
 	}
 
 	// Compute the new number of descendants.
 	for _, r := range replacement {
-		node.descendants += r.descendants()
+		node.Descendants += r.descendants()
 	}
 	for _, s := range superseded {
-		node.descendants -= s.descendants()
+		node.Descendants -= s.descendants()
 	}
 
 	// Determine whether we're still erroneous after the replacement. That's
@@ -638,24 +638,24 @@ func (node *InnerNode) replace_children(_range ranges.Range, replacement []*Synt
 			erroneous = true
 		}
 	}
-	if node.erroneous {
-		for _, c := range node.children[:replacement_range.Start] {
+	if node.Erroneous {
+		for _, c := range node.Children[:replacement_range.Start] {
 			if c.erroneous() {
 				erroneous = true
 			}
 		}
-		for _, c := range node.children[replacement_range.End:] {
+		for _, c := range node.Children[replacement_range.End:] {
 			if c.erroneous() {
 				erroneous = true
 			}
 		}
 	}
-	node.erroneous = erroneous
+	node.Erroneous = erroneous
 
 	// TODO: double-check that translation from Rust to Go was correct.
 
 	// Perform the replacement.
-	node.children = slices.Replace(node.children, int(_range.Start), int(_range.End), replacement_vec[replacement_range.Start:replacement_range.End]...)
+	node.Children = slices.Replace(node.Children, int(_range.Start), int(_range.End), replacement_vec[replacement_range.Start:replacement_range.End]...)
 	_range.End = _range.Start + replacement_range.Len()
 
 	// Renumber the new children. Retries until it works, taking
@@ -663,7 +663,7 @@ func (node *InnerNode) replace_children(_range ranges.Range, replacement []*Synt
 	left := uint64(0)
 	right := uint64(0)
 	max_left := _range.Start
-	max_right := uint64(len(node.children)) - _range.End
+	max_right := uint64(len(node.Children)) - _range.End
 	for {
 		renumber := ranges.NewRange(_range.Start-left, _range.End+right)
 
@@ -676,9 +676,9 @@ func (node *InnerNode) replace_children(_range ranges.Range, replacement []*Synt
 		//   at the first child.
 		var start_number uint64
 		if start, fail := overflow.SubUint64(renumber.Start, 1); !fail {
-			start_number = node.children[start].upper()
+			start_number = node.Children[start].upper()
 		} else { // underflow
-			start_number = node.span.number() + 1
+			start_number = node.Span.number() + 1
 		}
 
 		// TODO: double-check that translation from Rust to Go was correct.
@@ -689,10 +689,10 @@ func (node *InnerNode) replace_children(_range ranges.Range, replacement []*Synt
 		// - or this node's upper bound if renumbering ends behind the last
 		//   child.
 		var end_number uint64
-		if renumber.End < uint64(len(node.children)) {
-			end_number = node.children[renumber.End].span().number()
+		if renumber.End < uint64(len(node.Children)) {
+			end_number = node.Children[renumber.End].span().number()
 		} else {
-			end_number = node.upper
+			end_number = node.Upper
 		}
 
 		// Try to renumber.
@@ -714,20 +714,20 @@ func (node *InnerNode) replace_children(_range ranges.Range, replacement []*Synt
 
 // Update this node after changes were made to one of its children.
 func (node *InnerNode) update_parent(prev_len, new_len, prev_descendants, new_descendants uint) {
-	node.len = node.len + new_len - prev_len
-	node.descendants = node.descendants + new_descendants - prev_descendants
-	node.erroneous = false
-	for _, child := range node.children {
+	node.Len = node.Len + new_len - prev_len
+	node.Descendants = node.Descendants + new_descendants - prev_descendants
+	node.Erroneous = false
+	for _, child := range node.Children {
 		if child.erroneous() {
-			node.erroneous = true
+			node.Erroneous = true
 		}
 	}
 }
 
 func (node *InnerNode) String() string {
 	buf := &strings.Builder{}
-	fmt.Fprintf(buf, "%v: %v", node.kind, node.len)
-	for _, child := range node.children {
+	fmt.Fprintf(buf, "%v: %v", node.Kind, node.Len)
+	for _, child := range node.Children {
 		fmt.Fprintf(buf, " %v", child)
 	}
 	return buf.String()
@@ -735,17 +735,17 @@ func (node *InnerNode) String() string {
 
 func (node *InnerNode) clone() Repr {
 	var children []*SyntaxNode
-	for _, child := range node.children {
+	for _, child := range node.Children {
 		children = append(children, child.clone())
 	}
 	return &InnerNode{
-		kind:        node.kind,
-		len:         node.len,
-		span:        node.span,
-		descendants: node.descendants,
-		erroneous:   node.erroneous,
-		upper:       node.upper,
-		children:    children,
+		Kind:        node.Kind,
+		Len:         node.Len,
+		Span:        node.Span,
+		Descendants: node.Descendants,
+		Erroneous:   node.Erroneous,
+		Upper:       node.Upper,
+		Children:    children,
 	}
 }
 
@@ -756,9 +756,9 @@ func (node *InnerNode) clone() Repr {
 // An error node in the untyped syntax tree.
 type ErrorNode struct {
 	// The source text of the node.
-	text string
+	Text string
 	// The syntax error.
-	error *SyntaxError
+	Error *SyntaxError
 }
 
 // Create new error node.
@@ -766,34 +766,34 @@ type ErrorNode struct {
 // new
 func NewErrorNode(error *SyntaxError, text string) *ErrorNode {
 	return &ErrorNode{
-		text:  text,
-		error: error,
+		Text:  text,
+		Error: error,
 	}
 }
 
 // The byte length of the node in the source text.
 func (node *ErrorNode) len() uint {
-	return uint(len(node.text))
+	return uint(len(node.Text))
 }
 
 // Add a user-presentable hint to this error node.
 func (node *ErrorNode) hint(hint string) {
-	node.error.hints = append(node.error.hints, hint)
+	node.Error.Hints = append(node.Error.Hints, hint)
 }
 
 // Whether the two leaf nodes are the same apart from spans.
 func (node *ErrorNode) spanless_eq(other *ErrorNode) bool {
-	return node.text == other.text && node.error.spanless_eq(other.error)
+	return node.Text == other.Text && node.Error.spanless_eq(other.Error)
 }
 
 func (node *ErrorNode) String() string {
-	return fmt.Sprintf("Error: %v (%v)", node.text, node.error.message)
+	return fmt.Sprintf("Error: %v (%v)", node.Text, node.Error.Message)
 }
 
 func (node *ErrorNode) clone() Repr {
 	return &ErrorNode{
-		text:  node.text,
-		error: node.error.clone(),
+		Text:  node.Text,
+		Error: node.Error.clone(),
 	}
 }
 
@@ -804,12 +804,12 @@ func (node *ErrorNode) clone() Repr {
 // A syntactical error.
 type SyntaxError struct {
 	// The node's span.
-	span Span
+	Span Span
 	// The error message.
-	message string
+	Message string
 	// Additional hints to the user, indicating how this error could be avoided
 	// or worked around.
-	hints []string
+	Hints []string
 }
 
 // Create a new detached syntax error.
@@ -817,22 +817,22 @@ type SyntaxError struct {
 // new
 func NewSyntaxError(message string) *SyntaxError {
 	return &SyntaxError{
-		span:    Span_detached(),
-		message: message,
-		hints:   nil,
+		Span:    Span_detached(),
+		Message: message,
+		Hints:   nil,
 	}
 }
 
 // Whether the two errors are the same apart from spans.
 func (node *SyntaxError) spanless_eq(other *SyntaxError) bool {
-	return node.message == other.message && slices.Equal(node.hints, other.hints)
+	return node.Message == other.Message && slices.Equal(node.Hints, other.Hints)
 }
 
 func (node *SyntaxError) clone() *SyntaxError {
 	return &SyntaxError{
-		span:    node.span,
-		message: node.message,
-		hints:   slices.Clone(node.hints),
+		Span:    node.Span,
+		Message: node.Message,
+		Hints:   slices.Clone(node.Hints),
 	}
 }
 
@@ -897,11 +897,11 @@ func (link *LinkedNode) find(span Span) option.Option[*LinkedNode] {
 		return option.Some(link.clone())
 	}
 
-	if inner, ok := link.node.repr.(*InnerNode); ok {
+	if inner, ok := link.node.Repr.(*InnerNode); ok {
 		// The parent of a subtree has a smaller span number than all of its
 		// descendants. Therefore, we can bail out early if the target span's
 		// number is smaller than our number.
-		if span.number() < inner.span.number() {
+		if span.number() < inner.Span.number() {
 			return option.None[*LinkedNode]()
 		}
 
@@ -1211,7 +1211,7 @@ var ErrUnnumberable = errors.New("cannot number within this interval")
 
 // ### [ Helper functions ] ####################################################
 
-func printRoot(root *SyntaxNode) {
+func PrintRoot(root *SyntaxNode) {
 	depth := 0
 	printTree(root, depth)
 }
@@ -1219,15 +1219,15 @@ func printRoot(root *SyntaxNode) {
 func printTree(n *SyntaxNode, depth int) {
 	pad := strings.Repeat("  ", depth)
 	depth++
-	switch repr := n.repr.(type) {
+	switch repr := n.Repr.(type) {
 	case *LeafNode:
-		fmt.Printf("%sleaf (kind=%q) text=%q\n", pad, repr.kind, repr.text)
+		fmt.Printf("%sleaf (kind=%q) text=%q\n", pad, repr.Kind, repr.Text)
 	case *InnerNode:
-		fmt.Printf("%sinner (kind=%q)\n", pad, repr.kind)
-		for _, child := range repr.children {
+		fmt.Printf("%sinner (kind=%q)\n", pad, repr.Kind)
+		for _, child := range repr.Children {
 			printTree(child, depth)
 		}
 	case *ErrorNode:
-		fmt.Printf("%serror (text=%q) error=%q\n", pad, repr.text, repr.error.message)
+		fmt.Printf("%serror (text=%q) error=%q\n", pad, repr.Text, repr.Error.Message)
 	}
 }

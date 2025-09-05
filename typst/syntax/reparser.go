@@ -26,7 +26,7 @@ func reparse(
 		return r
 	}
 	id := root.span().id()
-	*root = *parse(text)
+	*root = *Parse(text)
 	if id, ok := id.Get(); ok {
 		if err := root.numberize(id, SpanFULL); err != nil {
 			panic(err)

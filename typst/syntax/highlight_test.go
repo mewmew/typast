@@ -16,7 +16,7 @@ type RangeTag struct {
 func test(t *testing.T, text string, want []RangeTag) {
 	var tags vector.Vector[RangeTag]
 	root := parse(text)
-	//printRoot(root)
+	//PrintRoot(root)
 	highlight_tree(&tags, NewLinkedNode(root))
 	got := []RangeTag(tags)
 	if !reflect.DeepEqual(want, got) {

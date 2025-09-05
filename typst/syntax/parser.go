@@ -11,7 +11,7 @@ import (
 )
 
 // Parses a source file as top-level markup.
-func parse(text string) *SyntaxNode {
+func Parse(text string) *SyntaxNode {
 	p := NewParser(text, 0, SyntaxModeMarkup)
 	markup_exprs(p, true, NewSyntaxSet(SyntaxKindEnd))
 	return p.finish_into(SyntaxKindMarkup)

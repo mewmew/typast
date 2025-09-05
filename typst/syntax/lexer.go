@@ -95,7 +95,7 @@ func (lexer *Lexer) error(message string) SyntaxKind {
 // If the current node is an error, adds a hint.
 func (lexer *Lexer) hint(message string) {
 	if err, ok := lexer.err.Get(); ok {
-		err.hints = append(err.hints, message)
+		err.Hints = append(err.Hints, message)
 	}
 }
 
@@ -105,7 +105,7 @@ func (lexer *Lexer) hint(message string) {
 // and the raw [`SyntaxKind`] to make it more ergonomic to check the kind
 func (lexer *Lexer) next() (SyntaxKind, *SyntaxNode) {
 	if err, ok := lexer.err.Get(); ok {
-		panic(err.message)
+		panic(err.Message)
 	}
 	start := lexer.s.Cursor()
 
