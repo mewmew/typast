@@ -13,6 +13,11 @@ func NewRange(start, end uint64) Range {
 }
 
 func (r *Range) IsEmpty() bool {
+	// TODO: double-check how to handle special case (used by reparser where
+	// Start=Max and End=0)
+	if r.Start > r.End {
+		return true // special case
+	}
 	return r.Len() == 0
 }
 

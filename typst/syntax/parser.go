@@ -2306,6 +2306,16 @@ func all(s string, cond func(r rune) bool) bool {
 	return true
 }
 
+// any reports whether any characters of s fulfills the given condition.
+func any_(s string, cond func(r rune) bool) bool {
+	for _, r := range s {
+		if cond(r) {
+			return true
+		}
+	}
+	return false
+}
+
 // Adds a value to the set.
 
 // Returns whether the value was newly inserted. That is:
