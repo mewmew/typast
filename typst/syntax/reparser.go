@@ -122,10 +122,7 @@ func try_reparse(
 	expansion := uint(1)
 	for {
 		// Add slack in both directions.
-		start := overlap.Start - max(uint64(expansion), 2)
-		if start < 0 {
-			start = 0 // NOTE: was using saturating_sub
-		}
+		start := saturating_sub(uint(overlap.Start), max(expansion, 2))
 		end := min(uint(overlap.End)+expansion, uint(len(children)))
 
 		// Expand to the left.
@@ -183,7 +180,7 @@ func try_reparse(
 			// Similarly, if we children follow or we not top-level the nesting
 			// must match its previous value.
 			if (at_end || at_start == prev_at_start_after) && ((at_end && !parent_kind.IsPresent()) || nesting == prev_nesting_after) {
-				if err := node.replace_children(ranges.NewRange(start, uint64(end)), newborns); err == nil {
+				if err := node.replace_children(ranges.NewRange(uint64(start), uint64(end)), newborns); err == nil {
 					return option.Some(new_range)
 				}
 			}
@@ -261,4 +258,12 @@ func next_nesting(node *SyntaxNode, nesting *uint) {
 			}
 		}
 	}
+}
+
+func saturating_sub(a, b uint) uint {
+	c := a - b
+	if c > a {
+		return 0
+	}
+	return c
 }
