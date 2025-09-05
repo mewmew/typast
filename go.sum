@@ -4,8 +4,8 @@ github.com/clipperhouse/uax29 v1.15.0 h1:L6A788hwxPfwvZs2JknKTDqiNN8eloRxIBIr12b
 github.com/clipperhouse/uax29 v1.15.0/go.mod h1:paNABhygWmmjkg0ROxKQoenJAX4dM9AS8biVkXmAK0c=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/mewmew/mathclass v0.0.0-20250903214400-8444688c1fcf h1:0Z10Z7EqWyE5bM+0s7+ynXeMD7TsosSQpQItkaJE4n8=
-github.com/mewmew/mathclass v0.0.0-20250903214400-8444688c1fcf/go.mod h1:mMvC9uapLCHHu+Afd/Wgq2Q6EXZ4PuDMOLsn/CAnbDU=
+github.com/mewmew/mathclass v0.0.0-20250903215644-cdb6edb36763 h1:xBtF8V0omLWh1ojNF325z+gqIKNzyDHTVG/8MO0lmbk=
+github.com/mewmew/mathclass v0.0.0-20250903215644-cdb6edb36763/go.mod h1:mMvC9uapLCHHu+Afd/Wgq2Q6EXZ4PuDMOLsn/CAnbDU=
 github.com/mrtkp9993/go-overflow v0.1.1 h1:bYLC26f0vSTluvRBqaQhyaJLQ9Wp/quulu1VxcfHOMY=
 github.com/mrtkp9993/go-overflow v0.1.1/go.mod h1:DrqVjfpRxYfjq86PIBAuaDs9HSh8ksItSLOEAjxzcGo=
 github.com/pelletier/go-toml/v2 v2.2.4 h1:mye9XuhQ6gvn5h28+VilKrrPoQVanw5PMw/TB0t5Ec4=
