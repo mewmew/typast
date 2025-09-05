@@ -498,12 +498,16 @@ func highlight_ident(node *LinkedNode) option.Option[Tag] {
 		if uint(node._range().End) == next.offset {
 			switch next.node.kind() {
 			case SyntaxKindLeftParen:
-				if SyntaxKind_is(next.parent_kind(), SyntaxKindArgs, SyntaxKindParams) {
-					return option.Some(Tag_Function)
+				if parent_kind, ok := next.parent_kind().Get(); ok {
+					if parent_kind == SyntaxKindArgs || parent_kind == SyntaxKindParams {
+						return option.Some(Tag_Function)
+					}
 				}
 			case SyntaxKindLeftBracket:
-				if SyntaxKind_is(next.parent_kind(), SyntaxKindContentBlock) {
-					return option.Some(Tag_Function)
+				if parent_kind, ok := next.parent_kind().Get(); ok {
+					if parent_kind == SyntaxKindContentBlock {
+						return option.Some(Tag_Function)
+					}
 				}
 			}
 		}
@@ -516,23 +520,30 @@ func highlight_ident(node *LinkedNode) option.Option[Tag] {
 
 	// Find the first non-field access ancestor.
 	ancestor := node
-	for SyntaxKind_is(ancestor.parent_kind(), SyntaxKindFieldAccess) {
-		ancestor = ancestor.parent.MustGet()
+	for {
+		if parent_kind, ok := ancestor.parent_kind().Get(); ok && parent_kind == SyntaxKindFieldAccess {
+			ancestor = ancestor.parent.MustGet()
+		} else {
+			break
+		}
 	}
 
 	// Are we directly before or behind a show rule colon?
-	if SyntaxKind_is(ancestor.parent_kind(), SyntaxKindShowRule) {
-		if next, ok := node.next_leaf().Get(); ok {
-			if next.node.kind() == SyntaxKindColon {
-				return option.Some(Tag_Function)
+	if parent_kind, ok := ancestor.parent_kind().Get(); ok {
+		if parent_kind == SyntaxKindShowRule {
+			if next, ok := next_leaf.Get(); ok {
+				if next.node.kind() == SyntaxKindColon {
+					return option.Some(Tag_Function)
+				}
 			}
-		}
-		if prev, ok := node.prev_leaf().Get(); ok {
-			if prev.node.kind() == SyntaxKindColon {
-				return option.Some(Tag_Function)
+			if prev, ok := node.prev_leaf().Get(); ok {
+				if prev.node.kind() == SyntaxKindColon {
+					return option.Some(Tag_Function)
+				}
 			}
 		}
 	}
+
 
 	// Are we (or an ancestor field access) directly after a hash.
 	if prev, ok := ancestor.prev_leaf().Get(); ok {
@@ -624,17 +635,3 @@ fn highlight_html_impl(html: &mut String, node: &LinkedNode) {
 	}
 }
 */
-
-// is
-func SyntaxKind_is(o option.Option[SyntaxKind], kinds ...SyntaxKind) bool {
-	v, ok := o.Get()
-	if !ok {
-		return false
-	}
-	for _, kind := range kinds {
-		if v == kind {
-			return true
-		}
-	}
-	return false
-}

@@ -534,3 +534,7 @@ var _name = map[SyntaxKind]string{
 func (kind SyntaxKind) name() string {
 	return _name[kind]
 }
+
+func (kind SyntaxKind) String() string {
+	return kind.name()
+}

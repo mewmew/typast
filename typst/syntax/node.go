@@ -1205,3 +1205,26 @@ func (l *LinkedChildren) RevChildren() iter.Seq2[int, *LinkedNode] {
 
 // Indicates that a node cannot be numbered within a given interval.
 var ErrUnnumberable = errors.New("cannot number within this interval")
+
+// ### [ Helper functions ] ####################################################
+
+func printRoot(root *SyntaxNode) {
+	depth := 0
+	printTree(root, depth)
+}
+
+func printTree(n *SyntaxNode, depth int) {
+	pad := strings.Repeat("  ", depth)
+	depth++
+	switch repr := n.repr.(type) {
+	case *LeafNode:
+		fmt.Printf("%sleaf (kind=%q) text=%q\n", pad, repr.kind, repr.text)
+	case *InnerNode:
+		fmt.Printf("%sinner (kind=%q)\n", pad, repr.kind)
+		for _, child := range repr.children {
+			printTree(child, depth)
+		}
+	case *ErrorNode:
+		fmt.Printf("%serror\n", pad)
+	}
+}
