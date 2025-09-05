@@ -2649,7 +2649,7 @@ func (node *ModuleImport) bare_name() (string, error) {
 			if err != nil {
 				return "", ErrBareImport_PackageInvalid // TODO: also report err as warning?
 			}
-			name = spec.name
+			name = spec.Name
 		} else {
 			file_name := filepath.Base(str)
 			ext := filepath.Ext(file_name)

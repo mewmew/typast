@@ -11,7 +11,7 @@ func test_reparse(t *testing.T, prev_str string, _range ranges.Range, with strin
 	prev := source.root.clone()
 	r := source.edit(_range, with)
 	found := source.root.clone()
-	expected := parse(source.text())
+	expected := Parse(source.text())
 	found.synthesize(Span_detached())
 	expected.synthesize(Span_detached())
 	// TODO: figure out a better way to compare nodes that string representation comparison.

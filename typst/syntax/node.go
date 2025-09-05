@@ -2,6 +2,7 @@ package syntax
 
 import (
 	"fmt"
+	"io"
 	"iter"
 	"slices"
 	"strings"
@@ -20,15 +21,33 @@ type SyntaxNode struct {
 	Repr Repr
 }
 
+func (node *SyntaxNode) SyntaxKind() SyntaxKind {
+	return node.Repr.SyntaxKind()
+}
+
 // The three internal representations.
 type Repr interface {
 	isSyntaxNode()
 	clone() Repr
+
+	SyntaxKind() SyntaxKind
 }
 
 func (*LeafNode) isSyntaxNode()  {} // A leaf node.
-func (*InnerNode) isSyntaxNode() {} // A reference-counted inner node.
+func (*InnerNode) isSyntaxNode() {} // An inner node.
 func (*ErrorNode) isSyntaxNode() {} // An error node.
+
+func (node *LeafNode) SyntaxKind() SyntaxKind {
+	return node.Kind
+}
+
+func (node *InnerNode) SyntaxKind() SyntaxKind {
+	return node.Kind
+}
+
+func (*ErrorNode) SyntaxKind() SyntaxKind {
+	return SyntaxKindError
+}
 
 // Create a new leaf node.
 //
@@ -1229,5 +1248,18 @@ func printTree(n *SyntaxNode, depth int) {
 		}
 	case *ErrorNode:
 		fmt.Printf("%serror (text=%q) error=%q\n", pad, repr.Text, repr.Error.Message)
+	}
+}
+
+func PrintNode(out io.Writer, node *SyntaxNode) {
+	switch repr := node.Repr.(type) {
+	case *LeafNode:
+		fmt.Fprint(out, repr.Text)
+	case *InnerNode:
+		for _, child := range repr.Children {
+			PrintNode(out, child)
+		}
+	case *ErrorNode:
+		fmt.Fprint(out, repr.Text) // TODO: remove? return error or print warning?
 	}
 }

@@ -70,17 +70,17 @@ func TestParsePackageSpec(t *testing.T) {
 		{
 			input: "@preview/smartaref:0.1.0",
 			want: PackageSpec{
-				namespace: "preview",
-				name:      "smartaref",
-				version:   PackageVersion{major: 0, minor: 1, patch: 0},
+				Namespace: "preview",
+				Name:      "smartaref",
+				Version:   PackageVersion{major: 0, minor: 1, patch: 0},
 			},
 		},
 		{
 			input: "@local/foo:1.2.3",
 			want: PackageSpec{
-				namespace: "local",
-				name:      "foo",
-				version:   PackageVersion{major: 1, minor: 2, patch: 3},
+				Namespace: "local",
+				Name:      "foo",
+				Version:   PackageVersion{major: 1, minor: 2, patch: 3},
 			},
 		},
 	}

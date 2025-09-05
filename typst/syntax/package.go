@@ -159,14 +159,14 @@ func NewPackageManifest(pkg *PackageInfo) *PackageManifest {
 
 // Ensure that this manifest is indeed for the specified package.
 func (manifest *PackageManifest) validate(spec *PackageSpec) error {
-	if manifest.Pkg.Name != spec.name {
+	if manifest.Pkg.Name != spec.Name {
 		return errors.Errorf(
 			"package manifest contains mismatched name `%v`",
 			manifest.Pkg.Name,
 		)
 	}
 
-	if manifest.Pkg.Version != spec.version {
+	if manifest.Pkg.Version != spec.Version {
 		return errors.Errorf(
 			"package manifest contains mismatched version %v",
 			manifest.Pkg.Version,
@@ -238,17 +238,17 @@ func NewPackageInfo(
 // Identifies a package.
 type PackageSpec struct {
 	// The namespace the package lives in.
-	namespace string
+	Namespace string
 	// The name of the package within its namespace.
-	name string
+	Name string
 	// The package's version.
-	version PackageVersion
+	Version PackageVersion
 }
 
 func (spec *PackageSpec) versionless() *VersionlessPackageSpec {
 	return &VersionlessPackageSpec{
-		namespace: spec.namespace,
-		name:      spec.name,
+		namespace: spec.Namespace,
+		name:      spec.Name,
 	}
 }
 
@@ -268,21 +268,21 @@ func ParsePackageSpec(str string) (*PackageSpec, error) {
 		return nil, errors.WithStack(err)
 	}
 	return &PackageSpec{
-		namespace: namespace,
-		name:      name,
-		version:   version,
+		Namespace: namespace,
+		Name:      name,
+		Version:   version,
 	}, nil
 }
 
 func (spec *PackageSpec) String() string {
-	return fmt.Sprintf("@%s/%s:%s", spec.namespace, spec.name, spec.version)
+	return fmt.Sprintf("@%s/%s:%s", spec.Namespace, spec.Name, spec.Version)
 }
 
 func (spec *PackageSpec) clone() *PackageSpec {
 	return &PackageSpec{
-		namespace: spec.namespace,
-		name:      spec.name,
-		version:   spec.version,
+		Namespace: spec.Namespace,
+		Name:      spec.Name,
+		Version:   spec.Version,
 	}
 }
 
@@ -297,9 +297,9 @@ type VersionlessPackageSpec struct {
 // Fill in the `version` to get a complete [`PackageSpec`].
 func (spec *VersionlessPackageSpec) at(version PackageVersion) *PackageSpec {
 	return &PackageSpec{
-		namespace: spec.namespace,
-		name:      spec.name,
-		version:   version,
+		Namespace: spec.namespace,
+		Name:      spec.name,
+		Version:   version,
 	}
 }
 
