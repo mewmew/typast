@@ -146,10 +146,12 @@ func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.Packag
 		specs []*syntax.PackageSpec
 		// local Typst files to convert for offline use.
 		localTypPaths []string
+		// local resource paths to copy for offline use (e.g. images).
+		localResourcePaths []string
 	)
 
 	// walk CST tree.
-	visit := func(n any) bool {
+	visitImports := func(n any) bool {
 		inner, ok := n.(*syntax.InnerNode)
 		if !ok {
 			return true
@@ -193,14 +195,67 @@ func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.Packag
 				insertPkgRename(inner, i+1, spec.Name)
 				return true // done with inner node
 			case syntax.SyntaxKindModuleInclude:
-				localTypPath := getRelLocalPath(relTypDir, str)
+				path := str
+				localTypPath := getRelLocalPath(relTypDir, path)
 				localTypPaths = append(localTypPaths, localTypPath)
 				return true // done with inner node
 			}
 		}
 		return true
 	}
-	cstwalk.Walk(rootNode, visit)
+	cstwalk.Walk(rootNode, visitImports)
+
+	visitImageFunc := func(n any) bool {
+		inner, ok := n.(*syntax.InnerNode)
+		if !ok {
+			return true
+		}
+		switch inner.Kind {
+		case syntax.SyntaxKindFuncCall:
+			// parse function call below.
+		default:
+			return true
+		}
+		foundImageFunc := false
+		for _, child := range inner.Children {
+			if leaf, ok := child.Repr.(*syntax.LeafNode); ok {
+				if leaf.Kind == syntax.SyntaxKindIdent {
+					switch leaf.Text {
+					case "image":
+						foundImageFunc = true
+					}
+					continue
+				}
+			}
+			if !foundImageFunc {
+				continue
+			}
+			if args, ok := child.Repr.(*syntax.InnerNode); ok {
+				if args.Kind != syntax.SyntaxKindArgs {
+					continue
+				}
+				for _, c := range args.Children {
+					arg, ok := c.Repr.(*syntax.LeafNode)
+					if !ok {
+						continue
+					}
+					if arg.Kind != syntax.SyntaxKindStr {
+						continue
+					}
+					str, err := strconv.Unquote(arg.Text)
+					if err != nil {
+						panic(err)
+					}
+					path := str
+					localResourcePath := getRelLocalPath(relTypDir, path)
+					localResourcePaths = append(localResourcePaths, localResourcePath)
+					return true // done with inner node
+				}
+			}
+		}
+		return true
+	}
+	cstwalk.Walk(rootNode, visitImageFunc)
 
 	// Convert local Typst files.
 	for _, localTypPath := range localTypPaths {
@@ -209,6 +264,21 @@ func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.Packag
 			return nil, errors.WithStack(err)
 		}
 		specs = append(specs, localSpecs...)
+	}
+
+	// Copy local resources.
+	for _, localResourcePath := range localResourcePaths {
+		buf, err := projectRoot.ReadFile(localResourcePath)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		dir := filepath.Dir(localResourcePath)
+		if err := outRoot.MkdirAll(dir, 0o755); err != nil {
+			return nil, errors.WithStack(err)
+		}
+		if err := outRoot.WriteFile(localResourcePath, buf, 0o644); err != nil {
+			return nil, errors.WithStack(err)
+		}
 	}
 
 	// output new version of file.
