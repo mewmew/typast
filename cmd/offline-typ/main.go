@@ -216,19 +216,21 @@ func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.Packag
 		default:
 			return true
 		}
-		foundImageFunc := false
+		var foundFunc string
 		for _, child := range inner.Children {
 			if leaf, ok := child.Repr.(*syntax.LeafNode); ok {
 				if leaf.Kind == syntax.SyntaxKindIdent {
-					switch leaf.Text {
-					case "image":
-						foundImageFunc = true
-					}
+					foundFunc = leaf.Text
 					continue
 				}
 			}
-			if !foundImageFunc {
-				continue
+			switch foundFunc {
+			case "image":
+				// call to image function handled below.
+			case "bibliography":
+				// call to bibliography function handled below.
+			default:
+				continue // skip other function calls
 			}
 			if args, ok := child.Repr.(*syntax.InnerNode); ok {
 				if args.Kind != syntax.SyntaxKindArgs {
