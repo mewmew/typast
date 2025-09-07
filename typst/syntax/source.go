@@ -19,7 +19,7 @@ import (
 // Values of this type are cheap to clone and hash.
 type Source struct {
 	// The id of the source file.
-	id FileId
+	id FileID
 	// The root node of the file's untyped syntax tree.
 	root *SyntaxNode
 	// An acceleration structure for conversion of UTF-8, UTF-16 and
@@ -30,7 +30,7 @@ type Source struct {
 // Create a new source file.
 //
 // new
-func NewSource(id FileId, text string) *Source {
+func NewSource(id FileID, text string) *Source {
 	root := Parse(text)
 	if err := root.numberize(id, SpanFULL); err != nil {
 		panic(err)
@@ -46,7 +46,7 @@ func NewSource(id FileId, text string) *Source {
 //
 // detached
 func Source_detached(text string) *Source {
-	id := NewFileId(option.None[*PackageSpec](), NewVirtualPath("main.typ"))
+	id := NewFileID(option.None[*PackageSpec](), NewVirtualPath("main.typ"))
 	return NewSource(id, text)
 }
 
@@ -119,7 +119,7 @@ func Source_find(src *Source, span Span) option.Option[*LinkedNode] {
 //}
 
 func (src *Source) String() string {
-	return fmt.Sprintf("Source(%v)", src.id.vpath())
+	return fmt.Sprintf("Source(%v)", src.id.VPath())
 }
 
 // --- [/ Source ] -------------------------------------------------------------

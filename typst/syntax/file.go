@@ -10,155 +10,127 @@ import (
 	"github.com/mewmew/typast/internal/option"
 )
 
-// The global package-path interner.
-var INTERNER = &Interner{
-	to_id:   make(map[Pair]FileId),
-	from_id: nil,
+// interner is the global package-path interner.
+var interner = &Interner{
+	toID:   make(map[Pair]FileID),
+	fromID: nil,
 }
 
-// A package-path interner.
+// Interner is a package-path interner.
 type Interner struct {
-	to_id   map[Pair]FileId
-	from_id []Pair // actually maps from id-1 to Pair (since id is NonZero).
+	toID   map[Pair]FileID
+	fromID []Pair // maps from id-1 to Pair (since id is NonZero).
 
 	sync.RWMutex
 }
 
-// An interned pair of a package specification and a path.
+// Pair is an interned pair of a package specification and a path.
 type Pair struct {
-	spec  option.Option[*PackageSpec]
-	vpath *VirtualPath
+	Spec  option.Option[*PackageSpec]
+	VPath *VirtualPath
 }
 
-// --- [ FileId ] --------------------------------------------------------------
-
-// Identifies a file in a project or package.
+// FileID identifies a file in a project or package.
 //
 // This type is globally interned and thus cheap to copy, compare, and hash.
-type FileId uint16 // NonZeroU16
+type FileID uint16 // NonZeroU16
 
-// Create a new interned file specification.
+// NewFileID creates a new interned file specification.
 //
-// The path must start with a `/` or this function will panic.
-// Note that the path is normalized before interning.
-//
-// new
-func NewFileId(spec option.Option[*PackageSpec], vpath *VirtualPath) FileId {
-	// Try to find an existing entry that we can reuse.
-	//
-	// We could check with just a read lock, but if the pair is not yet
-	// present, we would then need to recheck after acquiring a write lock,
-	// which is probably not worth it.
-	pair := Pair{
-		spec:  spec,
-		vpath: vpath,
-	}
-	INTERNER.Lock() // write lock
-	defer INTERNER.Unlock()
-	if id, ok := INTERNER.to_id[pair]; ok {
+// The path must start with a `/` or this function will panic. The path is
+// normalized before interning.
+func NewFileID(spec option.Option[*PackageSpec], vpath *VirtualPath) FileID {
+	pair := Pair{Spec: spec, VPath: vpath}
+	interner.Lock()
+	defer interner.Unlock()
+	if id, ok := interner.toID[pair]; ok {
 		return id
 	}
-
-	// Create a new entry forever by leaking the pair. We can't leak more
-	// than 2^16 pair (and typically will leak a lot less), so its not a
-	// big deal.
-	id := FileId_push_pair(pair)
-	return id
+	return pushPair(pair)
 }
 
-// pre-condition: mutex of INTERNER must be write-locked.
-func FileId_push_pair(pair Pair) FileId {
-	num := uint16(len(INTERNER.from_id)) + 1
+// pushPair creates a new entry forever.
+//
+// pre-condition: interner must be write-locked.
+func pushPair(pair Pair) FileID {
+	num := uint16(len(interner.fromID)) + 1
 	if num == 0 {
 		panic("out of file ids") // uint16 overflow
 	}
-	id := FileId(num)
-	if _, ok := pair.spec.Get(); ok {
-		INTERNER.to_id[pair] = id // only add pair to to_id map if spec exist (i.e. not "fake" file specification)
+	id := FileID(num)
+	if _, ok := pair.Spec.Get(); ok {
+		// only add pair to map if spec exists (i.e. not a "fake" file
+		// specification)
+		interner.toID[pair] = id
 	}
-	INTERNER.from_id = append(INTERNER.from_id, pair)
+	interner.fromID = append(interner.fromID, pair)
 	return id
 }
 
-// Create a new unique ("fake") file specification, which is not
+// NewFakeFileID creates a new unique ("fake") file specification, which is not
 // accessible by vpath.
 //
-// Caution: the ID returned by this method is the *only* identifier of the
-// file, constructing a file ID with a path will *not* reuse the ID even
-// if the path is the same. This method should only be used for generating
-// "virtual" file ids such as content read from stdin.
-//
-// new_fake
-func new_fake_FileId(vpath *VirtualPath) FileId {
-	INTERNER.Lock() // write lock
-	defer INTERNER.Unlock()
-	pair := Pair{
-		spec:  option.None[*PackageSpec](),
-		vpath: vpath,
-	}
-	id := FileId_push_pair(pair)
-	return id
+// Caution: the ID returned is the *only* identifier of the file. Constructing a
+// file ID with a path will not reuse it, even if the path is the same. This
+// method should only be used for generating "virtual" file IDs such as content
+// read from stdin.
+func NewFakeFileID(vpath *VirtualPath) FileID {
+	interner.Lock()
+	defer interner.Unlock()
+	pair := Pair{Spec: option.None[*PackageSpec](), VPath: vpath}
+	return pushPair(pair)
 }
 
-// The package the file resides in, if any.
-//
-// package
-func (id FileId) spec() option.Option[*PackageSpec] {
+// Spec returns the package the file resides in, if any.
+func (id FileID) Spec() option.Option[*PackageSpec] {
 	pair := id.pair()
-	return pair.spec
+	return pair.Spec
 }
 
-// The absolute and normalized path to the file _within_ the project or
-// package.
-func (id FileId) vpath() *VirtualPath {
+// VPath returns the absolute and normalized path to the file within the project
+// or package.
+func (id FileID) VPath() *VirtualPath {
 	pair := id.pair()
-	return pair.vpath
+	return pair.VPath
 }
 
-// Resolve a file location relative to this file.
-func (id FileId) join(path string) FileId {
-	return NewFileId(id.spec().Clone(), id.vpath().join(path))
+// Join resolves a file location relative to this file.
+func (id FileID) Join(path string) FileID {
+	return NewFileID(id.Spec().Clone(), id.VPath().Join(path))
 }
 
-// The same file location, but with a different extension.
-func (id FileId) with_extension(extension string) FileId {
-	return NewFileId(id.spec().Clone(), id.vpath().with_extension(extension))
+// WithExtension returns the same file location but with a different extension.
+func (id FileID) WithExtension(extension string) FileID {
+	return NewFileID(id.Spec().Clone(), id.VPath().WithExtension(extension))
 }
 
-// Construct from a raw number.
+// FileIDFromUint16 constructs a FileID from a raw number.
 //
-// Should only be used with numbers retrieved via
-// [`into_raw`](Self::into_raw). Misuse may results in panics, but no
-// unsafety.
-//
-// from_raw
-// NonZeroU16
-func FileId_from_raw(v uint16) FileId {
-	return FileId(v)
+// Should only be used with numbers retrieved via Uint16. Misuse may result in
+// panics.
+func FileIDFromUint16(v uint16) FileID {
+	return FileID(v)
 }
 
-// Extract the raw underlying number.
-//
-// NonZeroU16
-func (id FileId) into_raw() uint16 {
+// Uint16 extracts the raw underlying number.
+func (id FileID) Uint16() uint16 {
 	return uint16(id)
 }
 
-// Get the static pair.
-func (id FileId) pair() Pair {
-	INTERNER.RLock() // read lock
-	defer INTERNER.RUnlock()
-	return INTERNER.from_id[id-1] // NOTE: from_id actually maps from id-1 to Pair (since id is NonZero).
+// pair retrieves the interned Pair for this FileID.
+func (id FileID) pair() Pair {
+	interner.RLock()
+	defer interner.RUnlock()
+	return interner.fromID[id-1]
 }
 
-func (id FileId) String() string {
-	buf := &strings.Builder{}
-	vpath := id.vpath()
-	if spec, ok := id.spec().Get(); ok {
-		fmt.Fprintf(buf, "%v", spec)
+// String returns a string representation of the FileID.
+func (id FileID) String() string {
+	out := &strings.Builder{}
+	vpath := id.VPath()
+	if spec, ok := id.Spec().Get(); ok {
+		fmt.Fprintf(out, "%v", spec)
 	}
-	fmt.Fprintf(buf, "%v", vpath)
-	return buf.String()
+	fmt.Fprintf(out, "%v", vpath)
+	return out.String()
 }
-
-// --- [/ FileId ] -------------------------------------------------------------

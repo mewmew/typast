@@ -321,7 +321,7 @@ func (node *SyntaxNode) unexpected() {
 // Assign spans to each node.
 //
 // numberize
-func (node *SyntaxNode) numberize(id FileId, within ranges.Range) error {
+func (node *SyntaxNode) numberize(id FileID, within ranges.Range) error {
 	if within.Start >= within.End {
 		return ErrUnnumberable
 	}
@@ -526,7 +526,7 @@ func (node *InnerNode) synthesize(span Span) {
 
 // Assign span numbers `within` an interval to this node's subtree or just
 // a `range` of its children.
-func (node *InnerNode) numberize(id FileId, _range option.Option[ranges.Range], within ranges.Range) error {
+func (node *InnerNode) numberize(id FileID, _range option.Option[ranges.Range], within ranges.Range) error {
 	// Determine how many nodes we will number.
 	descendants := uint(0)
 	if _range, ok := _range.Get(); ok {

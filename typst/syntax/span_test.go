@@ -21,7 +21,7 @@ func TestSpanDetached(t *testing.T) {
 }
 
 func TestSpanNumberEncoding(t *testing.T) {
-	want_id := FileId_from_raw(5)
+	want_id := FileIDFromUint16(5)
 	span := Span_from_number(want_id, 10).MustGet()
 	if got_id, ok := span.id().Get(); ok {
 		if want_id != got_id {
@@ -41,7 +41,7 @@ func TestSpanNumberEncoding(t *testing.T) {
 }
 
 func TestSpanRangeEncoding(t *testing.T) {
-	want_id := FileId_from_raw(uint16(math.MaxUint16))
+	want_id := FileIDFromUint16(uint16(math.MaxUint16))
 	roundtrip := func(want_range ranges.Range) {
 		span := Span_from_range(want_id, want_range)
 		if got_id, ok := span.id().Get(); ok {

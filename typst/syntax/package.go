@@ -52,8 +52,8 @@ type TemplateInfo struct {
 	// The directory within the package that contains the files that should be
 	// copied into the user's new project directory.
 	Path string `toml:"path"`
-	// A path relative to the template's path that points to the file serving
-	// as the compilation target.
+	// A path relative to the template's path that points to the file serving as
+	// the compilation target.
 	Entrypoint string `toml:"entrypoint"`
 	// A path relative to the package's root that points to a PNG or lossless
 	// WebP thumbnail for the template.
@@ -87,8 +87,8 @@ type PackageInfo struct {
 	// An array with up to three of the predefined categories to help users
 	// discover the package.
 	Categories []string `toml:"categories,omitempty"`
-	// An array of disciplines defining the target audience for which the
-	// package is useful.
+	// An array of disciplines defining the target audience for which the package
+	// is useful.
 	Disciplines []string `toml:"disciplines,omitempty"`
 	// The minimum required compiler version for the package.
 	Compiler *VersionBound `toml:"compiler,omitempty"`
@@ -99,7 +99,8 @@ type PackageInfo struct {
 	UnknownFields UnknownFields `toml:"-"`
 }
 
-// NewPackageManifest creates a new package manifest with the given package info.
+// NewPackageManifest creates a new package manifest with the given package
+// info.
 func NewPackageManifest(pkg *PackageInfo) *PackageManifest {
 	return &PackageManifest{
 		Pkg:      pkg,

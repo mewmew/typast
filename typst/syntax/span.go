@@ -16,7 +16,7 @@ import (
 // This is used throughout the compiler to track which source section an
 // element stems from or an error applies to.
 //
-//   - The [`.id()`](Self::id) function can be used to get the `FileId` for the
+//   - The [`.id()`](Self::id) function can be used to get the `FileID` for the
 //     span and, by extension, its file system path.
 //   - The `WorldExt::range` function can be used to map the span to a
 //     `Range<usize>`.
@@ -86,7 +86,7 @@ func Span_detached() Span {
 // Returns `None` if `number` is not contained in `FULL`.
 //
 // from_number
-func Span_from_number(id FileId, number uint64) option.Option[Span] {
+func Span_from_number(id FileID, number uint64) option.Option[Span] {
 	if number < SpanFULL.Start || number >= SpanFULL.End {
 		return option.None[Span]()
 	}
@@ -99,7 +99,7 @@ func Span_from_number(id FileId, number uint64) option.Option[Span] {
 // saturated.
 //
 // from_range
-func Span_from_range(id FileId, _range ranges.Range) Span {
+func Span_from_range(id FileID, _range ranges.Range) Span {
 	_max := uint64(1 << RANGE_PART_BITS)
 	start := min(_range.Start, _max)
 	end := min(_range.End, _max)
@@ -110,7 +110,7 @@ func Span_from_range(id FileId, _range ranges.Range) Span {
 // Construct from a raw number.
 //
 // Should only be used with numbers retrieved via
-// [`into_raw`](Self::into_raw). Misuse may results in panics, but no
+// [`Uint16`](Self::Uint16). Misuse may results in panics, but no
 // unsafety.
 //
 // # NonZeroU64
@@ -123,8 +123,8 @@ func Span_from_raw(v uint64) Span {
 // Pack a file ID and the low bits into a span.
 //
 // pack
-func Span_pack(id FileId, low uint64) Span {
-	bits := (uint64(id.into_raw()) << FILE_ID_SHIFT) | low
+func Span_pack(id FileID, low uint64) Span {
+	bits := (uint64(id.Uint16()) << FILE_ID_SHIFT) | low
 
 	// The file ID is non-zero.
 	if bits == 0 {
@@ -141,14 +141,14 @@ func (span Span) is_detached() bool {
 // The id of the file the span points into.
 //
 // Returns `None` if the span is detached.
-func (span Span) id() option.Option[FileId] {
+func (span Span) id() option.Option[FileID] {
 	// Detached span has only zero high bits, so it will trigger the
 	// `None` case.
 	file_id_bits := uint16(uint64(span) >> FILE_ID_SHIFT)
 	if file_id_bits == 0 {
-		return option.None[FileId]()
+		return option.None[FileID]()
 	}
-	return option.Some(FileId_from_raw(file_id_bits))
+	return option.Some(FileIDFromUint16(file_id_bits))
 }
 
 // The unique number of the span within its [`Source`](crate::Source).
@@ -198,12 +198,12 @@ func Span_find(spans iter.Seq[Span]) Span {
 }
 
 // Resolve a file location relative to this span's source.
-func (span Span) resolve_path(path string) (FileId, error) {
+func (span Span) resolve_path(path string) (FileID, error) {
 	id, ok := span.id().Get()
 	if !ok {
 		return 0, errors.New("cannot access file system from here")
 	}
-	return id.join(path), nil
+	return id.Join(path), nil
 }
 
 // --- [/ Span ] ---------------------------------------------------------------
