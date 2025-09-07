@@ -2,6 +2,70 @@
 
 Parser for Typst.
 
+## offline-typ tool
+
+The [cmd/offline-typ](cmd/offline-typ) tool converts Typst files for offline use. It can be used to vendor dependencies of Typst projects.
+
+All Typst files used by a project, including transitive dependencies are rewritten to use vendored copies of external libraries (which are stored in `/libs` of the output directory).
+
+Example usage:
+```bash
+# Convert report.typ and transitive dependencies for offline use.
+offline-typ report.typ
+```
+
+Example diff:
+```diff
+-#import "@local/uni-report:0.1.0"
++#import "/libs/uni-report/0.1.0/src/lib.typ" as uni-report
+
+-#import "@preview/latex-lookalike:0.1.3"
++#import "/libs/latex-lookalike/0.1.3/src/lib.typ" as latex-lookalike
+```
+
+## parse-typ tool
+
+The [cmd/parse-typ](cmd/parse-typ) tool parses and prints the CST (Concrete Syntax Tree) of Typst files.
+
+Example usage:
+```bash
+# Parse foo.typ and print its CST.
+parse-typ foo.typ
+```
+
+Example input:
+```typst
+Hello #text(fill: blue)[_world_]
+```
+
+Example output:
+```
+inner (kind="markup")
+  leaf (kind="text") text="Hello"
+  leaf (kind="space") text=" "
+  leaf (kind="hash") text="#"
+  inner (kind="function call")
+    leaf (kind="identifier") text="text"
+    inner (kind="call arguments")
+      leaf (kind="opening paren") text="("
+      inner (kind="named pair")
+        leaf (kind="identifier") text="fill"
+        leaf (kind="colon") text=":"
+        leaf (kind="space") text=" "
+        leaf (kind="identifier") text="blue"
+      leaf (kind="closing paren") text=")"
+      inner (kind="content block")
+        leaf (kind="opening bracket") text="["
+        inner (kind="markup")
+          inner (kind="emphasized content")
+            leaf (kind="underscore") text="_"
+            inner (kind="markup")
+              leaf (kind="text") text="world"
+            leaf (kind="underscore") text="_"
+        leaf (kind="closing bracket") text="]"
+  leaf (kind="space") text="\n"
+```
+
 ## License
 
 Code derived from the [Typst](https://github.com/typst/typst) project is governed the [Apache License](https://github.com/typst/typst/blob/main/LICENSE).
