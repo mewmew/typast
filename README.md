@@ -49,7 +49,7 @@ Example usage:
 parse-typ foo.typ
 ```
 
-Example input:
+Example input (`foo.typ`):
 ```typst
 Hello #text(fill: blue)[_world_]
 ```
