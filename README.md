@@ -8,6 +8,14 @@ The [cmd/offline-typ](cmd/offline-typ) tool converts Typst files for offline use
 
 All Typst files used by a project, including transitive dependencies are rewritten to use vendored copies of external libraries (which are stored in `/libs` of the output directory).
 
+### Install
+
+```bash
+go install github.com/mewmew/typast/cmd/offline-typ@latest
+```
+
+### Usage
+
 Example usage:
 ```bash
 # Convert report.typ and transitive dependencies for offline use.
@@ -26,6 +34,14 @@ Example diff:
 ## parse-typ tool
 
 The [cmd/parse-typ](cmd/parse-typ) tool parses and prints the CST (Concrete Syntax Tree) of Typst files.
+
+### Install
+
+```bash
+go install github.com/mewmew/typast/cmd/parse-typ@latest
+```
+
+### Usage
 
 Example usage:
 ```bash
