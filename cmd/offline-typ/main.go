@@ -178,8 +178,11 @@ func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.Packag
 			case syntax.SyntaxKindModuleImport:
 				spec, err := syntax.ParsePackageSpec(str)
 				if err != nil {
-					// TODO: report warning?
-					continue // already local import path
+					// NOTE: handle local import path e.g. `#import "foo/bar.typ"`
+					path := str
+					localTypPath := getRelLocalPath(relTypDir, path)
+					localTypPaths = append(localTypPaths, localTypPath)
+					return true // done with inner node
 				}
 				specs = append(specs, spec)
 				newPkgPath, err := getNewPkgPath(spec)
@@ -190,17 +193,7 @@ func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.Packag
 				insertPkgRename(inner, i+1, spec.Name)
 				return true // done with inner node
 			case syntax.SyntaxKindModuleInclude:
-				var localTypPath string
-				if filepath.IsAbs(str) {
-					rootSlash := fmt.Sprintf("%c", filepath.Separator)
-					relLocalTypPath, err := filepath.Rel(rootSlash, str)
-					if err != nil {
-						panic(fmt.Errorf("unable to make Typst file path %q relative; %+v", str, err))
-					}
-					localTypPath = relLocalTypPath
-				} else {
-					localTypPath = filepath.Join(relTypDir, str)
-				}
+				localTypPath := getRelLocalPath(relTypDir, str)
 				localTypPaths = append(localTypPaths, localTypPath)
 				return true // done with inner node
 			}
@@ -225,6 +218,19 @@ func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.Packag
 		return nil, errors.WithStack(err)
 	}
 	return specs, nil
+}
+
+// getRelLocalPath returns the path relative to the given directory.
+func getRelLocalPath(relTypDir, path string) string {
+	if !filepath.IsAbs(path) {
+		return filepath.Join(relTypDir, path)
+	}
+	rootSlash := fmt.Sprintf("%c", filepath.Separator)
+	relLocalTypPath, err := filepath.Rel(rootSlash, path)
+	if err != nil {
+		panic(fmt.Errorf("unable to make Typst file path %q relative; %+v", path, err))
+	}
+	return relLocalTypPath
 }
 
 // insertPkgRename inserts a package rename directive (if not already present)
