@@ -2657,7 +2657,7 @@ func (node *ModuleImport) bare_name() (string, error) {
 			name = file_stem
 		}
 
-		if !is_ident(name) {
+		if !isIdent(name) {
 			return "", ErrBareImport_PathInvalid
 		}
 

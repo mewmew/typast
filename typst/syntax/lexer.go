@@ -1363,7 +1363,7 @@ func count_newlines(text string) uint {
 // - `_` and `-` as continuing characters.
 //
 // [uax31]: http://www.unicode.org/reports/tr31/
-func is_ident(str string) bool {
+func isIdent(str string) bool {
 	if len(str) == 0 {
 		return false
 	}

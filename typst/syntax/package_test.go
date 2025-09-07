@@ -9,35 +9,35 @@ func TestVersionVersionMatch(t *testing.T) {
 	v1_1_1 := mustParsePackageVersion("1.1.1")
 
 	// equal
-	if !(v1_1_1.matches_eq(mustParseVersionBound("1"))) {
+	if !(v1_1_1.MatchesEQ(mustParseVersionBound("1"))) {
 		t.Errorf("expected 1.1.1 = 1")
 	}
-	if !(v1_1_1.matches_eq(mustParseVersionBound("1.1"))) {
+	if !(v1_1_1.MatchesEQ(mustParseVersionBound("1.1"))) {
 		t.Errorf("expected 1.1.1 = 1.1")
 	}
-	if !(!v1_1_1.matches_eq(mustParseVersionBound("1.2"))) {
+	if !(!v1_1_1.MatchesEQ(mustParseVersionBound("1.2"))) {
 		t.Errorf("expected !(1.1.1 = 1.2)")
 	}
 
 	// greater than
-	if !(!v1_1_1.matches_gt(mustParseVersionBound("1"))) {
+	if !(!v1_1_1.MatchesGT(mustParseVersionBound("1"))) {
 		t.Errorf("expected 1.1.1 > 1")
 	}
-	if !(v1_1_1.matches_gt(mustParseVersionBound("1.0"))) {
+	if !(v1_1_1.MatchesGT(mustParseVersionBound("1.0"))) {
 		t.Errorf("expected 1.1.1 > 1.0")
 	}
-	if !(!v1_1_1.matches_gt(mustParseVersionBound("1.1"))) {
+	if !(!v1_1_1.MatchesGT(mustParseVersionBound("1.1"))) {
 		t.Errorf("expected !(1.1.1 > 1.1)")
 	}
 
 	// less than
-	if !(!v1_1_1.matches_lt(mustParseVersionBound("1"))) {
+	if !(!v1_1_1.MatchesLT(mustParseVersionBound("1"))) {
 		t.Errorf("expected !(1.1.1 < 1)")
 	}
-	if !(!v1_1_1.matches_lt(mustParseVersionBound("1.1"))) {
+	if !(!v1_1_1.MatchesLT(mustParseVersionBound("1.1"))) {
 		t.Errorf("expected !(1.1.1 < 1.1)")
 	}
-	if !(v1_1_1.matches_lt(mustParseVersionBound("1.2"))) {
+	if !(v1_1_1.MatchesLT(mustParseVersionBound("1.2"))) {
 		t.Errorf("expected 1.1.1 < 1.2")
 	}
 }
@@ -53,7 +53,7 @@ entrypoint = "src/lib.typ"
 	want := &PackageManifest{
 		Pkg: &PackageInfo{
 			Name:       "package",
-			Version:    PackageVersion{major: 0, minor: 1, patch: 0},
+			Version:    PackageVersion{Major: 0, Minor: 1, Patch: 0},
 			Entrypoint: "src/lib.typ",
 		},
 	}
@@ -72,7 +72,7 @@ func TestParsePackageSpec(t *testing.T) {
 			want: PackageSpec{
 				Namespace: "preview",
 				Name:      "smartaref",
-				Version:   PackageVersion{major: 0, minor: 1, patch: 0},
+				Version:   PackageVersion{Major: 0, Minor: 1, Patch: 0},
 			},
 		},
 		{
@@ -80,7 +80,7 @@ func TestParsePackageSpec(t *testing.T) {
 			want: PackageSpec{
 				Namespace: "local",
 				Name:      "foo",
-				Version:   PackageVersion{major: 1, minor: 2, patch: 3},
+				Version:   PackageVersion{Major: 1, Minor: 2, Patch: 3},
 			},
 		},
 	}
