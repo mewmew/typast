@@ -4,7 +4,7 @@ Parser for Typst.
 
 ## offline-typ tool
 
-The [cmd/offline-typ](cmd/offline-typ) tool converts Typst files for offline use. It can be used to vendor dependencies of Typst projects.
+The [`offline-typ`](cmd/offline-typ) tool converts Typst files for offline use. It can be used to vendor dependencies of Typst projects.
 
 All Typst files used by a project, including transitive dependencies are rewritten to use vendored copies of external libraries (which are stored in `/libs` of the output directory).
 
@@ -33,7 +33,7 @@ Example diff:
 
 ## parse-typ tool
 
-The [cmd/parse-typ](cmd/parse-typ) tool parses and prints the CST (Concrete Syntax Tree) of Typst files.
+The [`parse-typ`](cmd/parse-typ) tool parses and prints the CST (Concrete Syntax Tree) of Typst files.
 
 ### Install
 
