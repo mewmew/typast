@@ -31,6 +31,12 @@ Example diff:
 +#import "/libs/latex-lookalike/0.1.3/src/lib.typ" as latex-lookalike
 ```
 
+### Screenshot
+
+Screenshot of example usage, where all the dependencies (Typst packages) and resources (images and bibliography) are vendored for reproducibility, offline use and easy sharing of Typst projects that rely on unfinished/unpublished packages (such as the development version of `fancy-units`).
+
+![Example use of offline-typ](example/offline-typ.png)
+
 ## parse-typ tool
 
 The [`parse-typ`](cmd/parse-typ) tool parses and prints the CST (Concrete Syntax Tree) of Typst files.
