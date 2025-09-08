@@ -32,7 +32,7 @@ type Source struct {
 // new
 func NewSource(id FileID, text string) *Source {
 	root := Parse(text)
-	if err := root.numberize(id, SpanFULL); err != nil {
+	if err := root.numberize(id, SpanFull); err != nil {
 		panic(err)
 	}
 	return &Source{

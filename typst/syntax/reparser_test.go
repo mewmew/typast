@@ -12,8 +12,8 @@ func test_reparse(t *testing.T, prev_str string, _range ranges.Range, with strin
 	r := source.edit(_range, with)
 	found := source.root.clone()
 	expected := Parse(source.text())
-	found.synthesize(Span_detached())
-	expected.synthesize(Span_detached())
+	found.synthesize(NewDetachedSpan())
+	expected.synthesize(NewDetachedSpan())
 	// TODO: figure out a better way to compare nodes that string representation comparison.
 	if found.String() != expected.String() {
 		t.Fatalf("reparse mismatch\n\tsource: %v\n\tprevious: %v\n\texpected: %v\n\tgot:      %v", source.text(), prev, expected, found)

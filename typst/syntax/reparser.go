@@ -25,10 +25,10 @@ func reparse(
 	if r, ok := try_reparse(text, replaced, replacement_len, option.None[SyntaxKind](), root, 0).Get(); ok {
 		return r
 	}
-	id := root.span().id()
+	id, ok := root.span().ID()
 	*root = *Parse(text)
-	if id, ok := id.Get(); ok {
-		if err := root.numberize(id, SpanFULL); err != nil {
+	if ok {
+		if err := root.numberize(id, SpanFull); err != nil {
 			panic(err)
 		}
 	}

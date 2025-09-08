@@ -3,58 +3,19 @@ package syntax
 import (
 	"iter"
 
-	"github.com/mewmew/typast/internal/option"
 	"github.com/mewmew/typast/internal/ranges"
-	overflow "github.com/mrtkp9993/go-overflow"
 	"github.com/pkg/errors"
 )
 
 // --- [ Span ] ----------------------------------------------------------------
 
-// Defines a range in a file.
+// A Span defines a range in a file.
 //
-// This is used throughout the compiler to track which source section an
-// element stems from or an error applies to.
+// It's used to track which source section an element stems from or
+// an error applies to.
 //
-//   - The [`.id()`](Self::id) function can be used to get the `FileID` for the
-//     span and, by extension, its file system path.
-//   - The `WorldExt::range` function can be used to map the span to a
-//     `Range<usize>`.
+// This type takes up 8 bytes and is copyable.
 //
-// This type takes up 8 bytes and is copyable and null-optimized (i.e.
-// `Option<Span>` also takes 8 bytes).
-//
-// Spans come in two flavors: Numbered spans and raw range spans. The
-// `WorldExt::range` function automatically handles both cases, yielding a
-// `Range<usize>`.
-//
-// # Numbered spans
-// Typst source files use _numbered spans._ Rather than using byte ranges,
-// which shift a lot as you type, each AST node gets a unique number.
-//
-// During editing, the span numbers stay mostly stable, even for nodes behind
-// an insertion. This is not true for simple ranges as they would shift. Spans
-// can be used as inputs to memoized functions without hurting cache
-// performance when text is inserted somewhere in the document other than the
-// end.
-//
-// Span ids are ordered in the syntax tree to enable quickly finding the node
-// with some id:
-//   - The id of a parent is always smaller than the ids of any of its children.
-//   - The id of a node is always greater than any id in the subtrees of any left
-//     sibling and smaller than any id in the subtrees of any right sibling.
-//
-// # Raw range spans
-// Non Typst-files use raw ranges instead of numbered spans. The maximum
-// encodable value for start and end is 2^23. Larger values will be saturated.
-type Span uint64 // NonZeroU64
-
-// The full range of numbers available for source file span numbering.
-var SpanFULL = ranges.NewRange(2, RANGE_BASE)
-
-// The value reserved for the detached span.
-const SpanDETACHED uint64 = 1
-
 // Data layout:
 // | 16 bits file id | 48 bits number |
 //
@@ -62,188 +23,151 @@ const SpanDETACHED uint64 = 1
 //   - 1 means detached
 //   - 2..2^47-1 is a numbered span
 //   - 2^47..2^48-1 is a raw range span. To retrieve it, you must subtract
-//     `RANGE_BASE` and then use shifting/bitmasking to extract the
+//     `rangeBase` and then use shifting/bitmasking to extract the
 //     components.
+type Span uint64
+
 const (
-	NUMBER_BITS      = 48
-	FILE_ID_SHIFT    = NUMBER_BITS
-	NUMBER_MASK      = uint64(1<<NUMBER_BITS) - 1
-	RANGE_BASE       = uint64(1 << 47)
-	RANGE_PART_BITS  = 23
-	RANGE_PART_SHIFT = RANGE_PART_BITS
-	RANGE_PART_MASK  = uint64(1<<RANGE_PART_BITS) - 1
+	numberBits     = 48
+	fileIDShift    = numberBits
+	numberMask     = (uint64(1) << numberBits) - 1
+	rangeBase      = uint64(1) << 47
+	rangePartBits  = 23
+	rangePartShift = rangePartBits
+	rangePartMask  = (uint64(1) << rangePartBits) - 1
+	spanDetached   = 1
+	maxRangePart   = uint64(1) << rangePartBits
 )
 
-// Create a span that does not point into any file.
-//
-// detached
-func Span_detached() Span {
-	return Span(SpanDETACHED)
+var (
+	// The full range of numbers available for source file span numbering.
+	SpanFull = ranges.NewRange(2, rangeBase)
+)
+
+// NewDetachedSpan creates a span that does not point into any file.
+func NewDetachedSpan() Span {
+	return Span(spanDetached)
 }
 
-// Create a new span from a file id and a number.
+// NewSpanFromNumber creates a new span from a file ID and a number.
 //
-// Returns `None` if `number` is not contained in `FULL`.
-//
-// from_number
-func Span_from_number(id FileID, number uint64) option.Option[Span] {
-	if number < SpanFULL.Start || number >= SpanFULL.End {
-		return option.None[Span]()
+// It returns true if the number is within the valid range.
+func NewSpanFromNumber(id FileID, number uint64) (Span, bool) {
+	if number < SpanFull.Start || number >= SpanFull.End {
+		return 0, false
 	}
-	return option.Some(Span_pack(id, number))
+	s := NewSpanPacked(id, number)
+	return s, true
 }
 
-// Create a new span from a raw byte range instead of a span number.
-//
-// If one of the range's parts exceeds the maximum value (2^23), it is
-// saturated.
-//
-// from_range
-func Span_from_range(id FileID, _range ranges.Range) Span {
-	_max := uint64(1 << RANGE_PART_BITS)
-	start := min(_range.Start, _max)
-	end := min(_range.End, _max)
-	number := (start << RANGE_PART_SHIFT) | end
-	return Span_pack(id, RANGE_BASE+number)
+// NewSpanFromRange creates a new span from a raw byte range.
+// If a range part exceeds the maximum value (2^23), it is saturated.
+func NewSpanFromRange(id FileID, byteRange ranges.Range) Span {
+	start := min(byteRange.Start, maxRangePart)
+	end := min(byteRange.End, maxRangePart)
+	number := (start << rangePartShift) | end
+	return NewSpanPacked(id, rangeBase+number)
 }
 
-// Construct from a raw number.
-//
-// Should only be used with numbers retrieved via
-// [`Uint16`](Self::Uint16). Misuse may results in panics, but no
-// unsafety.
-//
-// # NonZeroU64
-//
-// from_raw
-func Span_from_raw(v uint64) Span {
+// NewSpanFromUint64 constructs a span from a raw number.
+func NewSpanFromUint64(v uint64) Span {
 	return Span(v)
 }
 
-// Pack a file ID and the low bits into a span.
-//
-// pack
-func Span_pack(id FileID, low uint64) Span {
-	bits := (uint64(id.Uint16()) << FILE_ID_SHIFT) | low
-
-	// The file ID is non-zero.
+// NewSpanPacked packs a file ID and the low bits into a span.
+func NewSpanPacked(id FileID, low uint64) Span {
+	bits := (uint64(id.Uint16()) << fileIDShift) | low
 	if bits == 0 {
 		panic("file ID should be non-zero")
 	}
 	return Span(bits)
 }
 
-// Whether the span is detached.
-func (span Span) is_detached() bool {
-	return uint64(span) == SpanDETACHED
+// IsDetached returns whether the span is detached.
+func (s Span) IsDetached() bool {
+	return uint64(s) == spanDetached
 }
 
-// The id of the file the span points into.
-//
-// Returns `None` if the span is detached.
-func (span Span) id() option.Option[FileID] {
-	// Detached span has only zero high bits, so it will trigger the
-	// `None` case.
-	file_id_bits := uint16(uint64(span) >> FILE_ID_SHIFT)
-	if file_id_bits == 0 {
-		return option.None[FileID]()
+// ID returns the ID of the file the span points into.
+// It returns true if the span is not detached.
+func (s Span) ID() (FileID, bool) {
+	fileIDBits := uint16(uint64(s) >> fileIDShift)
+	if fileIDBits == 0 {
+		return 0, false
 	}
-	return option.Some(FileIDFromUint16(file_id_bits))
+	return FileIDFromUint16(fileIDBits), true
 }
 
-// The unique number of the span within its [`Source`](crate::Source).
-func (span Span) number() uint64 {
-	return uint64(span) & NUMBER_MASK
+// Number returns the unique number of the span within its source.
+func (s Span) Number() uint64 {
+	return uint64(s) & numberMask
 }
 
-// Extract a raw byte range from the span, if it is a raw range span.
-//
-// Typically, you should use `WorldExt::range` instead.
-func (span Span) _range() option.Option[ranges.Range] {
-	number, fail := overflow.SubUint64(span.number(), RANGE_BASE)
-	if fail { // underflow
-		return option.None[ranges.Range]()
+// RawRange extracts a raw byte range from the span.
+// It returns true if the span is a raw range span.
+func (s Span) RawRange() (ranges.Range, bool) {
+	number := s.Number()
+	if number < rangeBase {
+		return ranges.Range{}, false
 	}
-	start := number >> RANGE_PART_SHIFT
-	end := number & RANGE_PART_MASK
-	return option.Some(ranges.NewRange(start, end))
+
+	number -= rangeBase
+	start := number >> rangePartShift
+	end := number & rangePartMask
+	return ranges.NewRange(start, end), true
 }
 
-// Extract the raw underlying number.
-//
-// NonZeroU64
-func (span Span) into_raw() uint64 {
-	return uint64(span)
+// Uint64 extracts the raw underlying number.
+func (s Span) Uint64() uint64 {
+	return uint64(s)
 }
 
-// Return `other` if `self` is detached and `self` otherwise.
-func (span Span) or(other Span) Span {
-	if span.is_detached() {
+// Or returns other if s is detached and s otherwise.
+func (s Span) Or(other Span) Span {
+	if s.IsDetached() {
 		return other
-	} else {
-		return span
 	}
+	return s
 }
 
-// Find the first non-detached span in the iterator.
-//
-// find
-func Span_find(spans iter.Seq[Span]) Span {
+// FindFirstNonDetached finds the first non-detached span in the iterator.
+func FindFirstNonDetached(spans iter.Seq[Span]) Span {
 	for span := range spans {
-		if !span.is_detached() {
+		if !span.IsDetached() {
 			return span
 		}
 	}
-	return Span_detached()
+	return NewDetachedSpan()
 }
 
-// Resolve a file location relative to this span's source.
-func (span Span) resolve_path(path string) (FileID, error) {
-	id, ok := span.id().Get()
+// ResolvePath resolves a file location relative to this span's source.
+func (s Span) ResolvePath(path string) (FileID, error) {
+	id, ok := s.ID()
 	if !ok {
-		return 0, errors.New("cannot access file system from here")
+		return 0, errors.New("cannot access file system from a detached span")
 	}
 	return id.Join(path), nil
 }
 
-// --- [/ Span ] ---------------------------------------------------------------
-
 // --- [ Spanned ] -------------------------------------------------------------
 
-// A value with a span locating it in the source code.
+// A Spanned value with a span locating it in the source code.
 type Spanned[T any] struct {
 	// The spanned value.
-	v T
+	Value T
 	// The value's location in source code.
-	span Span
+	Span Span
 }
 
-// Create a new instance from a value and its span.
-//
-// new
+// NewSpanned creates a new instance from a value and its span.
 func NewSpanned[T any](v T, span Span) Spanned[T] {
 	return Spanned[T]{
-		v:    v,
-		span: span,
+		Value: v,
+		Span:  span,
 	}
 }
 
-// Convert from `&Spanned<T>` to `Spanned<&T>`
-//func (spanned *Spanned[T]) as_ref() Spanned[*T] {
-//	return Spanned{
-//		v:    &spanned.v,
-//		span: spanned.span,
-//	}
-//}
-
-// Map the value using a function.
-//
-// map
-func Spanned_map[T, U any](spanned Spanned[T], f func(T) U) Spanned[U] {
-	return Spanned[U]{
-		v:    f(spanned.v),
-		span: spanned.span,
-	}
+// Map maps the value using a function.
+func (s Spanned[T]) Map(f func(T) T) Spanned[T] {
+	return NewSpanned(f(s.Value), s.Span)
 }
-
-// --- [/ Spanned ] ------------------------------------------------------------

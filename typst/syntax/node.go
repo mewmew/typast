@@ -89,7 +89,7 @@ func SyntaxNode_placeholder(kind SyntaxKind) *SyntaxNode {
 		Repr: &LeafNode{
 			Kind: kind,
 			Text: "",
-			Span: Span_detached(),
+			Span: NewDetachedSpan(),
 		},
 	}
 }
@@ -326,7 +326,7 @@ func (node *SyntaxNode) numberize(id FileID, within ranges.Range) error {
 		return ErrUnnumberable
 	}
 
-	mid := Span_from_number(id, (within.Start+within.End)/2).MustGet()
+	mid, _ := NewSpanFromNumber(id, (within.Start+within.End)/2)
 	switch repr := node.Repr.(type) {
 	case *LeafNode:
 		repr.Span = mid
@@ -383,11 +383,11 @@ func (node *SyntaxNode) update_parent(prev_len, new_len, prev_descendants, new_d
 func (node *SyntaxNode) upper() uint64 {
 	switch repr := node.Repr.(type) {
 	case *LeafNode:
-		return repr.Span.number() + 1
+		return repr.Span.Number() + 1
 	case *InnerNode:
 		return repr.Upper
 	case *ErrorNode:
-		return repr.Error.Span.number() + 1
+		return repr.Error.Span.Number() + 1
 	}
 	panic("unreachable")
 }
@@ -435,7 +435,7 @@ func NewLeafNode(kind SyntaxKind, text string) *LeafNode {
 	return &LeafNode{
 		Kind: kind,
 		Text: text,
-		Span: Span_detached(),
+		Span: NewDetachedSpan(),
 	}
 }
 
@@ -507,7 +507,7 @@ func NewInnerNode(kind SyntaxKind, children []*SyntaxNode) *InnerNode {
 	return &InnerNode{
 		Kind:        kind,
 		Len:         length,
-		Span:        Span_detached(),
+		Span:        NewDetachedSpan(),
 		Descendants: descendants,
 		Erroneous:   erroneous,
 		Upper:       0,
@@ -518,7 +518,7 @@ func NewInnerNode(kind SyntaxKind, children []*SyntaxNode) *InnerNode {
 // Set a synthetic span for the node and all its descendants.
 func (node *InnerNode) synthesize(span Span) {
 	node.Span = span
-	node.Upper = span.number()
+	node.Upper = span.Number()
 	for _, child := range node.Children {
 		child.synthesize(span)
 	}
@@ -556,7 +556,7 @@ func (node *InnerNode) numberize(id FileID, _range option.Option[ranges.Range], 
 	start := within.Start
 	if !_range.IsPresent() {
 		end := start + stride
-		node.Span = Span_from_number(id, (start+end)/2).MustGet()
+		node.Span, _ = NewSpanFromNumber(id, (start+end)/2)
 		node.Upper = within.End
 		start = end
 	}
@@ -608,7 +608,7 @@ func (node *InnerNode) spanless_eq(other *InnerNode) bool {
 //
 // May have mutated the children if it returns `Err(_)`.
 func (node *InnerNode) replace_children(_range ranges.Range, replacement []*SyntaxNode) error {
-	id, ok := node.Span.id().Get()
+	id, ok := node.Span.ID()
 	if !ok {
 		return ErrUnnumberable
 	}
@@ -697,7 +697,7 @@ func (node *InnerNode) replace_children(_range ranges.Range, replacement []*Synt
 		if start, fail := overflow.SubUint64(renumber.Start, 1); !fail {
 			start_number = node.Children[start].upper()
 		} else { // underflow
-			start_number = node.Span.number() + 1
+			start_number = node.Span.Number() + 1
 		}
 
 		// TODO: double-check that translation from Rust to Go was correct.
@@ -709,7 +709,7 @@ func (node *InnerNode) replace_children(_range ranges.Range, replacement []*Synt
 		//   child.
 		var end_number uint64
 		if renumber.End < uint64(len(node.Children)) {
-			end_number = node.Children[renumber.End].span().number()
+			end_number = node.Children[renumber.End].span().Number()
 		} else {
 			end_number = node.Upper
 		}
@@ -836,7 +836,7 @@ type SyntaxError struct {
 // new
 func NewSyntaxError(message string) *SyntaxError {
 	return &SyntaxError{
-		Span:    Span_detached(),
+		Span:    NewDetachedSpan(),
 		Message: message,
 		Hints:   nil,
 	}
@@ -920,7 +920,7 @@ func (link *LinkedNode) find(span Span) option.Option[*LinkedNode] {
 		// The parent of a subtree has a smaller span number than all of its
 		// descendants. Therefore, we can bail out early if the target span's
 		// number is smaller than our number.
-		if span.number() < inner.Span.number() {
+		if span.Number() < inner.Span.Number() {
 			return option.None[*LinkedNode]()
 		}
 
@@ -932,7 +932,7 @@ func (link *LinkedNode) find(span Span) option.Option[*LinkedNode] {
 			ok := true
 			if i < len(children._children) {
 				next := children._children[i+1]
-				ok = next.span().number() > span.number()
+				ok = next.span().Number() > span.Number()
 			}
 			if ok {
 				found := child.find(span)
