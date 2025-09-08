@@ -910,10 +910,10 @@ func (link *LinkedNode) children() *LinkedChildren {
 }
 
 // Find a descendant with the given span.
-func (link *LinkedNode) find(span Span) option.Option[*LinkedNode] {
+func (link *LinkedNode) find(span Span) (*LinkedNode, bool) {
 	// NOTE: was `link.span()`
 	if link.node.span() == span {
-		return option.Some(link.clone())
+		return link.clone(), true
 	}
 
 	if inner, ok := link.node.Repr.(*InnerNode); ok {
@@ -921,29 +921,21 @@ func (link *LinkedNode) find(span Span) option.Option[*LinkedNode] {
 		// descendants. Therefore, we can bail out early if the target span's
 		// number is smaller than our number.
 		if span.Number() < inner.Span.Number() {
-			return option.None[*LinkedNode]()
+			return nil, false
 		}
 
 		children := link.children()
-		for i, child := range children.Children() {
+		for _, child := range children.Children() {
 			// Every node in this child's subtree has a smaller span number than
 			// the next sibling. Therefore we only need to recurse if the next
 			// sibling's span number is larger than the target span's number.
-			ok := true
-			if i < len(children._children) {
-				next := children._children[i+1]
-				ok = next.span().Number() > span.Number()
-			}
-			if ok {
-				found := child.find(span)
-				if found.IsPresent() {
-					return found
-				}
+			if found, ok := child.find(span); ok {
+				return found, true
 			}
 		}
 	}
 
-	return option.None[*LinkedNode]()
+	return nil, false
 }
 
 func (link *LinkedNode) clone() *LinkedNode {
@@ -958,18 +950,18 @@ func (link *LinkedNode) clone() *LinkedNode {
 // Access to parents and siblings.
 
 // Get the first previous non-trivia sibling node.
-func (link *LinkedNode) prev_sibling() option.Option[*LinkedNode] {
+func (link *LinkedNode) prev_sibling() (*LinkedNode, bool) {
 	parent, ok := link.parent.Get()
 	if !ok {
-		return option.None[*LinkedNode]()
+		return nil, false
 	}
 	index, fail := overflow.SubUint64(uint64(link.index), 1)
 	if fail { // underflow
-		return option.None[*LinkedNode]()
+		return nil, false
 	}
 	children := parent.node.children()
 	if int(index) >= len(children) {
-		return option.None[*LinkedNode]()
+		return nil, false
 	}
 	node := children[index]
 	offset := link.offset - node.len()
@@ -983,23 +975,23 @@ func (link *LinkedNode) prev_sibling() option.Option[*LinkedNode] {
 	if prev.node.kind().IsTrivia() {
 		return prev.prev_sibling()
 	} else {
-		return option.Some(prev)
+		return prev, true
 	}
 }
 
 // Get the next non-trivia sibling node.
-func (link *LinkedNode) next_sibling() option.Option[*LinkedNode] {
+func (link *LinkedNode) next_sibling() (*LinkedNode, bool) {
 	parent, ok := link.parent.Get()
 	if !ok {
-		return option.None[*LinkedNode]()
+		return nil, false
 	}
 	index, fail := overflow.AddUint64(uint64(link.index), 1)
 	if fail { // overflow
-		return option.None[*LinkedNode]()
+		return nil, false
 	}
 	children := parent.node.children()
 	if int(index) >= len(children) {
-		return option.None[*LinkedNode]()
+		return nil, false
 	}
 	node := children[index]
 	offset := link.offset + link.node.len()
@@ -1013,35 +1005,35 @@ func (link *LinkedNode) next_sibling() option.Option[*LinkedNode] {
 	if next.node.kind().IsTrivia() {
 		return next.next_sibling()
 	} else {
-		return option.Some(next)
+		return next, true
 	}
 }
 
 // Get the kind of this node's parent.
-func (link *LinkedNode) parent_kind() option.Option[SyntaxKind] {
+func (link *LinkedNode) parent_kind() (SyntaxKind, bool) {
 	parent, ok := link.parent.Get()
 	if !ok {
-		return option.None[SyntaxKind]()
+		return SyntaxKind(0), false
 	}
-	return option.Some(parent.node.kind())
+	return parent.node.kind(), true
 }
 
 // Get the kind of this node's first previous non-trivia sibling.
-func (link *LinkedNode) prev_sibling_kind() option.Option[SyntaxKind] {
-	prev_sibling, ok := link.prev_sibling().Get()
+func (link *LinkedNode) prev_sibling_kind() (SyntaxKind, bool) {
+	prev_sibling, ok := link.prev_sibling()
 	if !ok {
-		return option.None[SyntaxKind]()
+		return SyntaxKind(0), false
 	}
-	return option.Some(prev_sibling.node.kind())
+	return prev_sibling.node.kind(), true
 }
 
 // Get the kind of this node's next non-trivia sibling.
-func (link *LinkedNode) next_sibling_kind() option.Option[SyntaxKind] {
-	next_sibling, ok := link.next_sibling().Get()
+func (link *LinkedNode) next_sibling_kind() (SyntaxKind, bool) {
+	next_sibling, ok := link.next_sibling()
 	if !ok {
-		return option.None[SyntaxKind]()
+		return SyntaxKind(0), false
 	}
-	return option.Some(next_sibling.node.kind())
+	return next_sibling.node.kind(), true
 }
 
 // --- [ LinkedNode ] ----------------------------------------------------------
@@ -1057,43 +1049,43 @@ const (
 // Access to leaves.
 
 // Get the rightmost non-trivia leaf before this node.
-func (link *LinkedNode) prev_leaf() option.Option[*LinkedNode] {
+func (link *LinkedNode) prev_leaf() (*LinkedNode, bool) {
 	node := link.clone()
 	for {
-		prev, ok := node.prev_sibling().Get()
+		prev, ok := node.prev_sibling()
 		if !ok {
 			break
 		}
-		if leaf, ok := prev.rightmost_leaf().Get(); ok {
-			return option.Some(leaf)
+		if leaf, ok := prev.rightmost_leaf(); ok {
+			return leaf, true
 		}
 		node = prev
 	}
 	if parent, ok := link.parent.Get(); ok {
 		return parent.prev_leaf()
 	}
-	return option.None[*LinkedNode]()
+	return nil, false
 }
 
 // Find the leftmost contained non-trivia leaf.
-func (link *LinkedNode) leftmost_leaf() option.Option[*LinkedNode] {
+func (link *LinkedNode) leftmost_leaf() (*LinkedNode, bool) {
 	if link.node.is_leaf() && !link.node.kind().IsTrivia() && !link.node.kind().IsError() {
-		return option.Some(link.clone())
+		return link.clone(), true
 	}
 
 	for _, child := range link.children().Children() {
-		if leaf, ok := child.leftmost_leaf().Get(); ok {
-			return option.Some(leaf)
+		if leaf, ok := child.leftmost_leaf(); ok {
+			return leaf, true
 		}
 	}
 
-	return option.None[*LinkedNode]()
+	return nil, false
 }
 
 // Get the leaf immediately before the specified byte offset.
-func (link *LinkedNode) leaf_before(cursor uint) option.Option[*LinkedNode] {
+func (link *LinkedNode) leaf_before(cursor uint) (*LinkedNode, bool) {
 	if len(link.node.children()) == 0 && cursor <= link.offset+link.node.len() {
-		return option.Some(link.clone())
+		return link.clone(), true
 	}
 
 	offset := link.offset
@@ -1106,13 +1098,13 @@ func (link *LinkedNode) leaf_before(cursor uint) option.Option[*LinkedNode] {
 		offset += length
 	}
 
-	return option.None[*LinkedNode]()
+	return nil, false
 }
 
 // Get the leaf after the specified byte offset.
-func (link *LinkedNode) leaf_after(cursor uint) option.Option[*LinkedNode] {
+func (link *LinkedNode) leaf_after(cursor uint) (*LinkedNode, bool) {
 	if len(link.node.children()) == 0 && cursor < link.offset+link.node.len() {
-		return option.Some(link.clone())
+		return link.clone(), true
 	}
 
 	offset := link.offset
@@ -1124,11 +1116,11 @@ func (link *LinkedNode) leaf_after(cursor uint) option.Option[*LinkedNode] {
 		offset += length
 	}
 
-	return option.None[*LinkedNode]()
+	return nil, false
 }
 
 // Get the leaf at the specified byte offset.
-func (link *LinkedNode) leaf_at(cursor uint, side Side) option.Option[*LinkedNode] {
+func (link *LinkedNode) leaf_at(cursor uint, side Side) (*LinkedNode, bool) {
 	switch side {
 	case SideBefore:
 		return link.leaf_before(cursor)
@@ -1139,37 +1131,37 @@ func (link *LinkedNode) leaf_at(cursor uint, side Side) option.Option[*LinkedNod
 }
 
 // Find the rightmost contained non-trivia leaf.
-func (link *LinkedNode) rightmost_leaf() option.Option[*LinkedNode] {
+func (link *LinkedNode) rightmost_leaf() (*LinkedNode, bool) {
 	if link.node.is_leaf() && !link.node.kind().IsTrivia() {
-		return option.Some(link.clone())
+		return link.clone(), true
 	}
 
 	for _, child := range link.children().RevChildren() {
-		if leaf, ok := child.rightmost_leaf().Get(); ok {
-			return option.Some(leaf)
+		if leaf, ok := child.rightmost_leaf(); ok {
+			return leaf, true
 		}
 	}
 
-	return option.None[*LinkedNode]()
+	return nil, false
 }
 
 // Get the leftmost non-trivia leaf after this node.
-func (link *LinkedNode) next_leaf() option.Option[*LinkedNode] {
+func (link *LinkedNode) next_leaf() (*LinkedNode, bool) {
 	node := link.clone()
 	for {
-		next, ok := node.next_sibling().Get()
+		next, ok := node.next_sibling()
 		if !ok {
 			break
 		}
-		if leaf, ok := next.leftmost_leaf().Get(); ok {
-			return option.Some(leaf)
+		if leaf, ok := next.leftmost_leaf(); ok {
+			return leaf, true
 		}
 		node = next
 	}
 	if parent, ok := link.parent.Get(); ok {
 		return parent.next_leaf()
 	}
-	return option.None[*LinkedNode]()
+	return nil, false
 }
 
 func (link *LinkedNode) String() string {

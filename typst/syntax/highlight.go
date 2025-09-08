@@ -2,8 +2,6 @@ package syntax
 
 import (
 	"strings"
-
-	"github.com/mewmew/typast/internal/option"
 )
 
 // A syntax highlighting tag.
@@ -198,319 +196,318 @@ func (tag Tag) css_class() string {
 // Determine the highlight tag of a linked syntax node.
 //
 // Returns `None` if the node should not be highlighted.
-func highlight(node *LinkedNode) option.Option[Tag] {
+func highlight(node *LinkedNode) (Tag, bool) {
 	switch node.node.kind() {
 	case SyntaxKindMarkup:
-		if parent_kind, ok := node.parent_kind().Get(); ok && parent_kind == SyntaxKindTermItem {
-			if sibling_kind, ok := node.next_sibling_kind().Get(); ok && sibling_kind == SyntaxKindColon {
-				return option.Some(Tag_ListTerm)
+		if parent_kind, ok := node.parent_kind(); ok && parent_kind == SyntaxKindTermItem {
+			if sibling_kind, ok := node.next_sibling_kind(); ok && sibling_kind == SyntaxKindColon {
+				return Tag_ListTerm, true
 			}
 		}
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindText:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindSpace:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindLinebreak:
-		return option.Some(Tag_Escape)
+		return Tag_Escape, true
 	case SyntaxKindParbreak:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindEscape:
-		return option.Some(Tag_Escape)
+		return Tag_Escape, true
 	case SyntaxKindShorthand:
-		return option.Some(Tag_Escape)
+		return Tag_Escape, true
 	case SyntaxKindSmartQuote:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindStrong:
-		return option.Some(Tag_Strong)
+		return Tag_Strong, true
 	case SyntaxKindEmph:
-		return option.Some(Tag_Emph)
+		return Tag_Emph, true
 	case SyntaxKindRaw:
-		return option.Some(Tag_Raw)
+		return Tag_Raw, true
 	case SyntaxKindRawLang:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindRawTrimmed:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindRawDelim:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindLink:
-		return option.Some(Tag_Link)
+		return Tag_Link, true
 	case SyntaxKindLabel:
-		return option.Some(Tag_Label)
+		return Tag_Label, true
 	case SyntaxKindRef:
-		return option.Some(Tag_Ref)
+		return Tag_Ref, true
 	case SyntaxKindRefMarker:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindHeading:
-		return option.Some(Tag_Heading)
+		return Tag_Heading, true
 	case SyntaxKindHeadingMarker:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindListItem:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindListMarker:
-		return option.Some(Tag_ListMarker)
+		return Tag_ListMarker, true
 	case SyntaxKindEnumItem:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindEnumMarker:
-		return option.Some(Tag_ListMarker)
+		return Tag_ListMarker, true
 	case SyntaxKindTermItem:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindTermMarker:
-		return option.Some(Tag_ListMarker)
+		return Tag_ListMarker, true
 	case SyntaxKindEquation:
-		return option.None[Tag]()
+		return 0, false
 
 	case SyntaxKindMath:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindMathText:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindMathIdent:
 		return highlight_ident(node)
 	case SyntaxKindMathShorthand:
-		return option.Some(Tag_Escape)
+		return Tag_Escape, true
 	case SyntaxKindMathAlignPoint:
-		return option.Some(Tag_MathOperator)
+		return Tag_MathOperator, true
 	case SyntaxKindMathDelimited:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindMathAttach:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindMathFrac:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindMathRoot:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindMathPrimes:
-		return option.None[Tag]()
+		return 0, false
 
 	case SyntaxKindHash:
 		return highlight_hash(node)
 	case SyntaxKindLeftBrace:
-		return option.Some(Tag_Punctuation)
+		return Tag_Punctuation, true
 	case SyntaxKindRightBrace:
-		return option.Some(Tag_Punctuation)
+		return Tag_Punctuation, true
 	case SyntaxKindLeftBracket:
-		return option.Some(Tag_Punctuation)
+		return Tag_Punctuation, true
 	case SyntaxKindRightBracket:
-		return option.Some(Tag_Punctuation)
+		return Tag_Punctuation, true
 	case SyntaxKindLeftParen:
-		return option.Some(Tag_Punctuation)
+		return Tag_Punctuation, true
 	case SyntaxKindRightParen:
-		return option.Some(Tag_Punctuation)
+		return Tag_Punctuation, true
 	case SyntaxKindComma:
-		return option.Some(Tag_Punctuation)
+		return Tag_Punctuation, true
 	case SyntaxKindSemicolon:
-		return option.Some(Tag_Punctuation)
+		return Tag_Punctuation, true
 	case SyntaxKindColon:
-		return option.Some(Tag_Punctuation)
+		return Tag_Punctuation, true
 	case SyntaxKindStar:
-		if parent_kind, ok := node.parent_kind().Get(); ok && parent_kind == SyntaxKindStrong {
-			return option.None[Tag]()
+		if parent_kind, ok := node.parent_kind(); ok && parent_kind == SyntaxKindStrong {
+			return 0, false
 		}
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindUnderscore:
-		if parent_kind, ok := node.parent_kind().Get(); ok && parent_kind == SyntaxKindMathAttach {
-			return option.Some(Tag_MathOperator)
+		if parent_kind, ok := node.parent_kind(); ok && parent_kind == SyntaxKindMathAttach {
+			return Tag_MathOperator, true
 		}
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindDollar:
-		return option.Some(Tag_MathDelimiter)
+		return Tag_MathDelimiter, true
 	case SyntaxKindPlus:
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindMinus:
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindSlash:
-		if parent_kind, ok := node.parent_kind().Get(); ok && parent_kind == SyntaxKindMathFrac {
-			return option.Some(Tag_MathOperator)
+		if parent_kind, ok := node.parent_kind(); ok && parent_kind == SyntaxKindMathFrac {
+			return Tag_MathOperator, true
 		}
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindHat:
-		return option.Some(Tag_MathOperator)
+		return Tag_MathOperator, true
 	case SyntaxKindPrime:
-		return option.Some(Tag_MathOperator)
+		return Tag_MathOperator, true
 	case SyntaxKindDot:
-		return option.Some(Tag_Punctuation)
+		return Tag_Punctuation, true
 	case SyntaxKindEq:
-		if parent_kind, ok := node.parent_kind().Get(); ok && parent_kind == SyntaxKindHeading {
-			return option.None[Tag]()
+		if parent_kind, ok := node.parent_kind(); ok && parent_kind == SyntaxKindHeading {
+			return 0, false
 		}
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindEqEq:
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindExclEq:
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindLt:
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindLtEq:
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindGt:
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindGtEq:
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindPlusEq:
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindHyphEq:
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindStarEq:
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindSlashEq:
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindDots:
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindArrow:
-		return option.Some(Tag_Operator)
+		return Tag_Operator, true
 	case SyntaxKindRoot:
-		return option.Some(Tag_MathOperator)
+		return Tag_MathOperator, true
 
 	case SyntaxKindNot:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindAnd:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindOr:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindNone:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindAuto:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindLet:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindSet:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindShow:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindContext:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindIf:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindElse:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindFor:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindIn:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindWhile:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindBreak:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindContinue:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindReturn:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindImport:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindInclude:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindAs:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 
 	case SyntaxKindCode:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindIdent:
 		return highlight_ident(node)
 	case SyntaxKindBool:
-		return option.Some(Tag_Keyword)
+		return Tag_Keyword, true
 	case SyntaxKindInt:
-		return option.Some(Tag_Number)
+		return Tag_Number, true
 	case SyntaxKindFloat:
-		return option.Some(Tag_Number)
+		return Tag_Number, true
 	case SyntaxKindNumeric:
-		return option.Some(Tag_Number)
+		return Tag_Number, true
 	case SyntaxKindStr:
-		return option.Some(Tag_String)
+		return Tag_String, true
 	case SyntaxKindCodeBlock:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindContentBlock:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindParenthesized:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindArray:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindDict:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindNamed:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindKeyed:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindUnary:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindBinary:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindFieldAccess:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindFuncCall:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindArgs:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindSpread:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindClosure:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindParams:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindLetBinding:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindSetRule:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindShowRule:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindContextual:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindConditional:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindWhileLoop:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindForLoop:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindModuleImport:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindImportItems:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindImportItemPath:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindRenamedImportItem:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindModuleInclude:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindLoopBreak:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindLoopContinue:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindFuncReturn:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindDestructuring:
-		return option.None[Tag]()
+		return 0, false
 	case SyntaxKindDestructAssignment:
-		return option.None[Tag]()
+		return 0, false
 
 	case SyntaxKindShebang:
-		return option.Some(Tag_Comment)
+		return Tag_Comment, true
 	case SyntaxKindLineComment:
-		return option.Some(Tag_Comment)
+		return Tag_Comment, true
 	case SyntaxKindBlockComment:
-		return option.Some(Tag_Comment)
+		return Tag_Comment, true
 	case SyntaxKindError:
-		return option.Some(Tag_Error)
+		return Tag_Error, true
 	case SyntaxKindEnd:
-		return option.None[Tag]()
+		return 0, false
 	}
 	panic("unreachable")
 }
 
 // Highlight an identifier based on context.
-func highlight_ident(node *LinkedNode) option.Option[Tag] {
+func highlight_ident(node *LinkedNode) (Tag, bool) {
 	// Are we directly before an argument list?
-	next_leaf := node.next_leaf()
-	if next, ok := next_leaf.Get(); ok {
+	if next, ok := node.next_leaf(); ok {
 		if uint(node.Range().End) == next.offset {
 			switch next.node.kind() {
 			case SyntaxKindLeftParen:
-				if parent_kind, ok := next.parent_kind().Get(); ok {
+				if parent_kind, ok := next.parent_kind(); ok {
 					if parent_kind == SyntaxKindArgs || parent_kind == SyntaxKindParams {
-						return option.Some(Tag_Function)
+						return Tag_Function, true
 					}
 				}
 			case SyntaxKindLeftBracket:
-				if parent_kind, ok := next.parent_kind().Get(); ok {
+				if parent_kind, ok := next.parent_kind(); ok {
 					if parent_kind == SyntaxKindContentBlock {
-						return option.Some(Tag_Function)
+						return Tag_Function, true
 					}
 				}
 			}
@@ -519,13 +516,13 @@ func highlight_ident(node *LinkedNode) option.Option[Tag] {
 
 	// Are we in math?
 	if node.node.kind() == SyntaxKindMathIdent {
-		return option.Some(Tag_Interpolated)
+		return Tag_Interpolated, true
 	}
 
 	// Find the first non-field access ancestor.
 	ancestor := node
 	for {
-		if parent_kind, ok := ancestor.parent_kind().Get(); ok && parent_kind == SyntaxKindFieldAccess {
+		if parent_kind, ok := ancestor.parent_kind(); ok && parent_kind == SyntaxKindFieldAccess {
 			ancestor = ancestor.parent.MustGet()
 		} else {
 			break
@@ -533,51 +530,56 @@ func highlight_ident(node *LinkedNode) option.Option[Tag] {
 	}
 
 	// Are we directly before or behind a show rule colon?
-	if parent_kind, ok := ancestor.parent_kind().Get(); ok {
+	if parent_kind, ok := ancestor.parent_kind(); ok {
 		if parent_kind == SyntaxKindShowRule {
-			if next, ok := next_leaf.Get(); ok {
+			if next, ok := node.next_leaf(); ok {
 				if next.node.kind() == SyntaxKindColon {
-					return option.Some(Tag_Function)
+					return Tag_Function, true
 				}
 			}
-			if prev, ok := node.prev_leaf().Get(); ok {
+			if prev, ok := node.prev_leaf(); ok {
 				if prev.node.kind() == SyntaxKindColon {
-					return option.Some(Tag_Function)
+					return Tag_Function, true
 				}
 			}
 		}
 	}
 
 	// Are we (or an ancestor field access) directly after a hash.
-	if prev, ok := ancestor.prev_leaf().Get(); ok {
+	if prev, ok := ancestor.prev_leaf(); ok {
 		if prev.node.kind() == SyntaxKindHash {
-			return option.Some(Tag_Interpolated)
+			return Tag_Interpolated, true
 		}
 	}
 
 	// Are we behind a dot, that is behind another identifier?
-	prev, ok := node.prev_leaf().Get()
-	if !ok {
-		return option.None[Tag]()
-	}
-	if prev.node.kind() == SyntaxKindDot {
-		prev_prev := prev.prev_leaf().MustGet()
-		if Node_is_ident(prev_prev) {
-			return highlight_ident(prev_prev)
+	if prev, ok := node.prev_leaf(); ok {
+		if prev.node.kind() == SyntaxKindDot {
+			if prev_prev, ok := prev.prev_leaf(); ok {
+				if Node_is_ident(prev_prev) {
+					return highlight_ident(prev_prev)
+				}
+			}
 		}
 	}
 
-	return option.None[Tag]()
+	return 0, false
 }
 
 // Highlight a hash based on context.
-func highlight_hash(node *LinkedNode) option.Option[Tag] {
-	next := node.next_sibling().MustGet()
+func highlight_hash(node *LinkedNode) (Tag, bool) {
+	next, ok := node.next_sibling()
+	if !ok {
+		return 0, false
+	}
 	expr := SyntaxNode_cast[Expr](next.node).MustGet()
 	if !Expr_hash(expr) {
-		return option.None[Tag]()
+		return 0, false
 	}
-	return highlight(next.leftmost_leaf().MustGet())
+	if left, ok := next.leftmost_leaf(); ok {
+		return highlight(left)
+	}
+	return 0, false
 }
 
 // Whether the node is one of the two identifier nodes.
@@ -606,7 +608,7 @@ func highlight_html(root *SyntaxNode) string {
 // Highlight one source node, emitting HTML.
 func highlight_html_impl(html *strings.Builder, node *LinkedNode) {
 	span := false
-	if tag, ok := highlight(node).Get(); ok && tag != Tag_Error {
+	if tag, ok := highlight(node); ok && tag != Tag_Error {
 		span = true
 		html.WriteString("<span class=\"")
 		html.WriteString(tag.css_class())

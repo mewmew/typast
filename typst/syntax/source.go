@@ -94,7 +94,7 @@ func (s *Source) Edit(replace ranges.Range, with string) ranges.Range {
 // Find finds the node with the given span.
 //
 // It returns None if the span does not point into this source file.
-func (s *Source) Find(span Span) option.Option[*LinkedNode] {
+func (s *Source) Find(span Span) (*LinkedNode, bool) {
 	return NewLinkedNode(s.Root).find(span)
 }
 
@@ -104,7 +104,7 @@ func (s *Source) Find(span Span) option.Option[*LinkedNode] {
 //
 // Typically, it's easier to use `WorldExt::Range` instead.
 func (s *Source) Range(span Span) (ranges.Range, bool) {
-	link, ok := s.Find(span).Get()
+	link, ok := s.Find(span)
 	if !ok {
 		return ranges.Range{}, false
 	}
