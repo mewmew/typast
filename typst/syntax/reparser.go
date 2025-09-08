@@ -238,7 +238,7 @@ func expand(node *SyntaxNode) bool {
 func next_at_start(node *SyntaxNode, at_start *bool) {
 	kind := node.kind()
 	if kind.IsTrivia() {
-		if kind == SyntaxKindParbreak || (kind == SyntaxKindSpace && any_(node.text(), is_newline)) {
+		if kind == SyntaxKindParbreak || (kind == SyntaxKindSpace && any_(node.text(), isNewline)) {
 			*at_start = true
 		}
 	} else {

@@ -12,80 +12,80 @@ const TEST = "ä\tcde\nf💛g\r\nhi\rjkl"
 
 func TestSourceFileNew(t *testing.T) {
 	want := []Line{
-		{byte_idx: 0, utf16_idx: 0},
-		{byte_idx: 7, utf16_idx: 6},
-		{byte_idx: 15, utf16_idx: 12},
-		{byte_idx: 18, utf16_idx: 15},
+		{ByteIdx: 0, Utf16Idx: 0},
+		{ByteIdx: 7, Utf16Idx: 6},
+		{ByteIdx: 15, Utf16Idx: 12},
+		{ByteIdx: 18, Utf16Idx: 15},
 	}
 	got := NewLines(TEST)
-	if !reflect.DeepEqual(want, got.lines) {
-		t.Errorf("lines mismatch; expected %v, got %v", want, got.lines)
+	if !reflect.DeepEqual(want, got.Lines) {
+		t.Errorf("lines mismatch; expected %v, got %v", want, got.Lines)
 	}
 }
 
 func TestSourceFilePosToLine(t *testing.T) {
 	golden := []struct {
-		byte_idx uint
-		want     option.Option[uint]
+		ByteIdx uint
+		want    option.Option[uint]
 	}{
-		{byte_idx: 0, want: option.Some[uint](0)},
-		{byte_idx: 2, want: option.Some[uint](0)},
-		{byte_idx: 6, want: option.Some[uint](0)},
-		{byte_idx: 7, want: option.Some[uint](1)},
-		{byte_idx: 8, want: option.Some[uint](1)},
-		{byte_idx: 12, want: option.Some[uint](1)},
-		{byte_idx: 21, want: option.Some[uint](3)},
-		{byte_idx: 22, want: option.None[uint]()},
+		{ByteIdx: 0, want: option.Some[uint](0)},
+		{ByteIdx: 2, want: option.Some[uint](0)},
+		{ByteIdx: 6, want: option.Some[uint](0)},
+		{ByteIdx: 7, want: option.Some[uint](1)},
+		{ByteIdx: 8, want: option.Some[uint](1)},
+		{ByteIdx: 12, want: option.Some[uint](1)},
+		{ByteIdx: 21, want: option.Some[uint](3)},
+		{ByteIdx: 22, want: option.None[uint]()},
 	}
 	l := NewLines(TEST)
 	for _, g := range golden {
 		want, ok1 := g.want.Get()
-		got, ok2 := l.byte_to_line(g.byte_idx).Get()
+		got, ok2 := l.ByteToLine(g.ByteIdx)
 		if ok1 != ok2 {
-			t.Errorf("option mismatch (for byte_idx=%d); expected %v, got %v", g.byte_idx, ok1, ok2)
+			t.Errorf("option mismatch (for ByteIdx=%d); expected %v, got %v", g.ByteIdx, ok1, ok2)
 			continue
 		}
 		if want != got {
-			t.Errorf("line mismatch (for byte_idx=%d); expected %v, got %v", g.byte_idx, want, got)
+			t.Errorf("line mismatch (for ByteIdx=%d); expected %v, got %v", g.ByteIdx, want, got)
 		}
 	}
 }
 
 func TestSourceFilePosToColumn(t *testing.T) {
 	golden := []struct {
-		byte_idx uint
-		want     option.Option[uint]
+		ByteIdx uint
+		want    option.Option[uint]
 	}{
-		{byte_idx: 0, want: option.Some[uint](0)},
-		{byte_idx: 2, want: option.Some[uint](1)},
-		{byte_idx: 6, want: option.Some[uint](5)},
-		{byte_idx: 7, want: option.Some[uint](0)},
-		{byte_idx: 8, want: option.Some[uint](1)},
-		{byte_idx: 12, want: option.Some[uint](2)},
+		{ByteIdx: 0, want: option.Some[uint](0)},
+		{ByteIdx: 2, want: option.Some[uint](1)},
+		{ByteIdx: 6, want: option.Some[uint](5)},
+		{ByteIdx: 7, want: option.Some[uint](0)},
+		{ByteIdx: 8, want: option.Some[uint](1)},
+		{ByteIdx: 12, want: option.Some[uint](2)},
 	}
 	l := NewLines(TEST)
 	for _, g := range golden {
 		want, ok1 := g.want.Get()
-		got, ok2 := l.byte_to_column(g.byte_idx).Get()
+		got, ok2 := l.ByteToColumn(g.ByteIdx)
 		if ok1 != ok2 {
-			t.Errorf("option mismatch (for byte_idx=%d); expected %v, got %v", g.byte_idx, ok1, ok2)
+			t.Errorf("option mismatch (for ByteIdx=%d); expected %v, got %v", g.ByteIdx, ok1, ok2)
 			continue
 		}
 		if want != got {
-			t.Errorf("column mismatch (for byte_idx=%d); expected %v, got %v", g.byte_idx, want, got)
+			t.Errorf("column mismatch (for ByteIdx=%d); expected %v, got %v", g.ByteIdx, want, got)
 		}
 	}
 }
 
 func TestSourceFileUtf16(t *testing.T) {
-	roundtrip := func(l *Lines, byte_idx uint, utf16_idx uint) {
-		middle := l.byte_to_utf16(byte_idx).MustGet()
-		result := l.utf16_to_byte(middle).MustGet()
-		if middle != utf16_idx {
-			t.Errorf("roundtrip utf-16 index mismatch; expected %v, got %v", utf16_idx, middle)
+	roundtrip := func(l *Lines, ByteIdx uint, Utf16Idx uint) {
+		middle, _ := l.ByteToUtf16(ByteIdx)
+		result, _ := l.Utf16ToByte(middle)
+		if middle != Utf16Idx {
+			t.Errorf("roundtrip utf-16 index mismatch; expected %v, got %v", Utf16Idx, middle)
 		}
-		if result != byte_idx {
-			t.Errorf("roundtrip byte index mismatch; expected %v, got %v", byte_idx, result)
+		if result != ByteIdx {
+			t.Errorf("roundtrip byte index mismatch; expected %v, got %v", ByteIdx, result)
 		}
 	}
 
@@ -98,23 +98,23 @@ func TestSourceFileUtf16(t *testing.T) {
 	roundtrip(l, 21, 18)
 
 	// Check for None result.
-	const byte_idx = 22
-	if _, ok := l.byte_to_utf16(byte_idx).Get(); ok {
-		t.Errorf("result mismatch (for byte_idx=%d); expected None, got Some", byte_idx)
+	const ByteIdx = 22
+	if _, ok := l.ByteToUtf16(ByteIdx); ok {
+		t.Errorf("result mismatch (for ByteIdx=%d); expected None, got Some", ByteIdx)
 	}
-	const utf16_idx = 19
-	if _, ok := l.utf16_to_byte(utf16_idx).Get(); ok {
-		t.Errorf("result mismatch (for utf16_idx=%d); expected None, got Some", utf16_idx)
+	const Utf16Idx = 19
+	if _, ok := l.Utf16ToByte(Utf16Idx); ok {
+		t.Errorf("result mismatch (for Utf16Idx=%d); expected None, got Some", Utf16Idx)
 	}
 }
 
 func TestSourceFileRoundtrip(t *testing.T) {
-	roundtrip := func(l *Lines, byte_idx uint) {
-		line := l.byte_to_line(byte_idx).MustGet()
-		column := l.byte_to_column(byte_idx).MustGet()
-		result := l.line_column_to_byte(line, column).MustGet()
-		if result != byte_idx {
-			t.Errorf("roundtrip (line, col) to byte index mismatch; expected %v, got %v", byte_idx, result)
+	roundtrip := func(l *Lines, ByteIdx uint) {
+		line, _ := l.ByteToLine(ByteIdx)
+		column, _ := l.ByteToColumn(ByteIdx)
+		result, _ := l.LineColumnToByte(line, column)
+		if result != ByteIdx {
+			t.Errorf("roundtrip (line, col) to byte index mismatch; expected %v, got %v", ByteIdx, result)
 		}
 	}
 
@@ -132,22 +132,22 @@ func TestSourceFileEdit(t *testing.T) {
 		reference := NewLines(after)
 
 		edited := NewLines(prev)
-		edited.edit(_range, with)
-		if edited.text != reference.text {
-			t.Errorf("edited text mismatch; expected %q, got %q", reference.text, edited.text)
+		edited.Edit(_range, with)
+		if edited.Text != reference.Text {
+			t.Errorf("edited text mismatch; expected %q, got %q", reference.Text, edited.Text)
 		}
-		if !reflect.DeepEqual(edited.lines, reference.lines) {
-			t.Errorf("edited lines mismatch; expected %v, got %v", reference.lines, edited.lines)
+		if !reflect.DeepEqual(edited.Lines, reference.Lines) {
+			t.Errorf("edited lines mismatch; expected %v, got %v", reference.Lines, edited.Lines)
 		}
 
 		replaced := NewLines(prev)
-		new_prev := string_replace_range(prev, _range, with)
-		replaced.replace(new_prev)
-		if replaced.text != reference.text {
-			t.Errorf("replaced text mismatch; expected %q, got %q", reference.text, replaced.text)
+		new_prev := replaceRange(prev, _range, with)
+		replaced.Replace(new_prev)
+		if replaced.Text != reference.Text {
+			t.Errorf("replaced text mismatch; expected %q, got %q", reference.Text, replaced.Text)
 		}
-		if !reflect.DeepEqual(replaced.lines, reference.lines) {
-			t.Errorf("replaced lines mismatch; expected %v, got %v", reference.lines, replaced.lines)
+		if !reflect.DeepEqual(replaced.Lines, reference.Lines) {
+			t.Errorf("replaced lines mismatch; expected %v, got %v", reference.Lines, replaced.Lines)
 		}
 	}
 

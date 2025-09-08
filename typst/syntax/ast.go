@@ -677,7 +677,7 @@ func (node *Raw) block() bool {
 		return false
 	}
 	for _, child := range node.SyntaxNode.children() {
-		if child.kind() == SyntaxKindRawTrimmed && strings.ContainsFunc(child.text(), is_newline) {
+		if child.kind() == SyntaxKindRawTrimmed && strings.ContainsFunc(child.text(), isNewline) {
 			return true
 		}
 	}

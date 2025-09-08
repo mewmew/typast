@@ -78,7 +78,7 @@ func (lexer *Lexer) column(index uint) uint {
 	rs := []rune(before) // TODO: optimize when needed.
 	n := uint(0)
 	for i := len(rs) - 1; i >= 0; i-- {
-		if is_newline(rs[i]) {
+		if isNewline(rs[i]) {
 			break
 		}
 		n++
@@ -180,12 +180,12 @@ func (lexer *Lexer) whitespace(start uint, c rune) SyntaxKind {
 }
 
 func (lexer *Lexer) shebang() SyntaxKind {
-	lexer.s.EatUntilFunc(is_newline)
+	lexer.s.EatUntilFunc(isNewline)
 	return SyntaxKindShebang
 }
 
 func (lexer *Lexer) line_comment() SyntaxKind {
-	lexer.s.EatUntilFunc(is_newline)
+	lexer.s.EatUntilFunc(isNewline)
 	return SyntaxKindLineComment
 }
 
@@ -516,7 +516,7 @@ func (lexer *Lexer) blocky_raw(inner_end uint, push_raw func(SyntaxKind, *scanne
 // non-newline whitespace is kept.
 func (lexer *Lexer) inline_raw(inner_end uint, push_raw func(SyntaxKind, *scanner.Scanner)) {
 	for lexer.s.Cursor() < inner_end {
-		if lexer.s.AtFunc(is_newline) {
+		if lexer.s.AtFunc(isNewline) {
 			push_raw(SyntaxKindText, lexer.s)
 			eat_newline(lexer.s)
 			push_raw(SyntaxKindRawTrimmed, lexer.s)
@@ -1211,7 +1211,7 @@ func scanner_advance(s *scanner.Scanner, by uint) {
 }
 
 func eat_newline(s *scanner.Scanner) bool {
-	ate := s.EatIfFunc(is_newline)
+	ate := s.EatIfFunc(isNewline)
 	if ate && strings.HasSuffix(s.Before(), "\r") {
 		s.EatIf("\n")
 	}
@@ -1224,14 +1224,14 @@ func eat_newline(s *scanner.Scanner) bool {
 func is_space(c rune, mode SyntaxMode) bool {
 	switch mode {
 	case SyntaxModeMarkup:
-		return c == ' ' || c == '\t' || is_newline(c)
+		return c == ' ' || c == '\t' || isNewline(c)
 	default:
 		return stdx.IsWhitespace(c)
 	}
 }
 
 // Whether a character is interpreted as a newline by Typst.
-func is_newline(c rune) bool {
+func isNewline(c rune) bool {
 	switch c {
 	case '\n':
 		return true // Line Feed
@@ -1320,7 +1320,7 @@ func split_newlines(text string) []string {
 		if !ok {
 			break
 		}
-		if is_newline(c) {
+		if isNewline(c) {
 			if c == '\r' {
 				s.EatIf("\n")
 			}
@@ -1346,7 +1346,7 @@ func count_newlines(text string) uint {
 		if !ok {
 			break
 		}
-		if is_newline(c) {
+		if isNewline(c) {
 			if c == '\r' {
 				s.EatIf("\n")
 			}

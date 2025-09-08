@@ -53,7 +53,7 @@ func NewDetachedSource(text string) *Source {
 
 // Text returns the whole source as a string.
 func (s *Source) Text() string {
-	return s.Lines.text
+	return s.Lines.Text
 }
 
 // Replace fully replaces the source text.
@@ -64,12 +64,12 @@ func (s *Source) Text() string {
 //
 // Replace returns the range in the new source that was ultimately reparsed.
 func (s *Source) Replace(new string) ranges.Range {
-	replacementRange, ok := s.Lines.replacement_range(new).Get()
+	replacementRange, ok := s.Lines.ReplacementRange(new)
 	if !ok {
 		return ranges.NewRange(0, 0)
 	}
-	prefix := replacementRange.prefix
-	suffix := replacementRange.suffix
+	prefix := replacementRange.Prefix
+	suffix := replacementRange.Suffix
 
 	old := s.Text()
 	replace := ranges.NewRange(uint64(prefix), uint64(uint(len(old))-suffix))
@@ -85,10 +85,10 @@ func (s *Source) Replace(new string) ranges.Range {
 // This method panics if the replace range is out of bounds.
 func (s *Source) Edit(replace ranges.Range, with string) ranges.Range {
 	// Update the text and lines.
-	s.Lines.edit(replace, with)
+	s.Lines.Edit(replace, with)
 
 	// Incrementally reparse the replaced range.
-	return reparse(s.Root, s.Lines.text, replace, uint(len(with)))
+	return reparse(s.Root, s.Lines.Text, replace, uint(len(with)))
 }
 
 // Find finds the node with the given span.
