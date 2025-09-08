@@ -206,7 +206,7 @@ func (node *Markup) exprs() []Expr {
 		// Ignore newline directly after statements without semicolons.
 		kind := child.kind()
 		keep := !was_stmt || child.kind() != SyntaxKindSpace
-		was_stmt = kind.is_stmt()
+		was_stmt = kind.IsStmt()
 		if keep {
 			if expr, ok := Expr_cast_with_space(child).Get(); ok {
 				exprs = append(exprs, expr)
@@ -2089,7 +2089,7 @@ func (node *Args) trailing_comma() bool {
 		}
 		kind := child.kind()
 		// TODO: double-check that conversion from Rust to Go is correct.
-		if kind.is_trivia() {
+		if kind.IsTrivia() {
 			continue
 		}
 		if kind == SyntaxKindComma {

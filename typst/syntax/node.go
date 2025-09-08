@@ -280,7 +280,7 @@ func (node *SyntaxNode) clone() *SyntaxNode {
 //
 // Don't use this for converting to an error!
 func (node *SyntaxNode) convert_to_kind(kind SyntaxKind) {
-	if kind.is_error() {
+	if kind.IsError() {
 		panic("error kind in leaf node")
 	}
 	switch repr := node.Repr.(type) {
@@ -295,7 +295,7 @@ func (node *SyntaxNode) convert_to_kind(kind SyntaxKind) {
 
 // Convert the child to an error, if it isn't already one.
 func (node *SyntaxNode) convert_to_error(message string) {
-	if node.kind().is_error() {
+	if node.kind().IsError() {
 		return
 	}
 	text := node.into_text()
@@ -306,8 +306,8 @@ func (node *SyntaxNode) convert_to_error(message string) {
 // expected, but the current kind was found.
 func (node *SyntaxNode) expected(expected string) {
 	kind := node.kind()
-	node.convert_to_error(fmt.Sprintf("expected %v, found %v", expected, kind.name()))
-	if kind.is_keyword() && (expected == "identifier" || expected == "pattern") {
+	node.convert_to_error(fmt.Sprintf("expected %v, found %v", expected, kind.Name()))
+	if kind.IsKeyword() && (expected == "identifier" || expected == "pattern") {
 		hint := fmt.Sprintf("keyword `%[1]v` is not allowed as an identifier; try `%[1]v_` instead", node.text())
 		node.hint(hint)
 	}
@@ -315,7 +315,7 @@ func (node *SyntaxNode) expected(expected string) {
 
 // Convert the child to an error stating it was unexpected.
 func (node *SyntaxNode) unexpected() {
-	node.convert_to_error(fmt.Sprintf("unexpected %v", node.kind().name()))
+	node.convert_to_error(fmt.Sprintf("unexpected %v", node.kind().Name()))
 }
 
 // Assign spans to each node.
@@ -429,7 +429,7 @@ type LeafNode struct {
 //
 // new
 func NewLeafNode(kind SyntaxKind, text string) *LeafNode {
-	if kind.is_error() {
+	if kind.IsError() {
 		panic("error kind in leaf node")
 	}
 	return &LeafNode{
@@ -488,7 +488,7 @@ type InnerNode struct {
 //
 // new
 func NewInnerNode(kind SyntaxKind, children []*SyntaxNode) *InnerNode {
-	if kind.is_error() {
+	if kind.IsError() {
 		panic("error kind in inner node")
 	}
 
@@ -980,7 +980,7 @@ func (link *LinkedNode) prev_sibling() option.Option[*LinkedNode] {
 		offset: offset,
 	}
 	// NOTE: was `prev.kind()`
-	if prev.node.kind().is_trivia() {
+	if prev.node.kind().IsTrivia() {
 		return prev.prev_sibling()
 	} else {
 		return option.Some(prev)
@@ -1010,7 +1010,7 @@ func (link *LinkedNode) next_sibling() option.Option[*LinkedNode] {
 		offset: offset,
 	}
 	// NOTE: was `next.kind()`
-	if next.node.kind().is_trivia() {
+	if next.node.kind().IsTrivia() {
 		return next.next_sibling()
 	} else {
 		return option.Some(next)
@@ -1077,7 +1077,7 @@ func (link *LinkedNode) prev_leaf() option.Option[*LinkedNode] {
 
 // Find the leftmost contained non-trivia leaf.
 func (link *LinkedNode) leftmost_leaf() option.Option[*LinkedNode] {
-	if link.node.is_leaf() && !link.node.kind().is_trivia() && !link.node.kind().is_error() {
+	if link.node.is_leaf() && !link.node.kind().IsTrivia() && !link.node.kind().IsError() {
 		return option.Some(link.clone())
 	}
 
@@ -1140,7 +1140,7 @@ func (link *LinkedNode) leaf_at(cursor uint, side Side) option.Option[*LinkedNod
 
 // Find the rightmost contained non-trivia leaf.
 func (link *LinkedNode) rightmost_leaf() option.Option[*LinkedNode] {
-	if link.node.is_leaf() && !link.node.kind().is_trivia() {
+	if link.node.is_leaf() && !link.node.kind().IsTrivia() {
 		return option.Some(link.clone())
 	}
 

@@ -78,7 +78,7 @@ func try_reparse(
 			}
 
 			// If the child is a block, try to reparse the block.
-			if child.kind().is_block() {
+			if child.kind().IsBlock() {
 				if newborn, ok := reparse_block(text, new_range).Get(); ok {
 					if err := node.replace_children(ranges.NewRange(uint64(i), uint64(i+1)), []*SyntaxNode{newborn}); err != nil {
 						return option.Some(new_range)
@@ -217,10 +217,10 @@ func overlaps(first ranges.Range, second ranges.Range) bool {
 // Whether the selection should be expanded beyond a node of this kind.
 func expand(node *SyntaxNode) bool {
 	kind := node.kind()
-	if kind.is_trivia() {
+	if kind.IsTrivia() {
 		return true
 	}
-	if kind.is_error() {
+	if kind.IsError() {
 		return true
 	}
 	if kind == SyntaxKindSemicolon {
@@ -237,7 +237,7 @@ func expand(node *SyntaxNode) bool {
 // previous value of the property.
 func next_at_start(node *SyntaxNode, at_start *bool) {
 	kind := node.kind()
-	if kind.is_trivia() {
+	if kind.IsTrivia() {
 		if kind == SyntaxKindParbreak || (kind == SyntaxKindSpace && any_(node.text(), is_newline)) {
 			*at_start = true
 		}

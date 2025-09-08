@@ -1,10 +1,11 @@
 package syntax
 
-// A syntactical building block of a Typst file.
+// SyntaxKind is a syntactical building block of a Typst file.
 //
-// Can be created by the lexer or by the parser.
+// It can be created by the lexer or by the parser.
 type SyntaxKind uint8
 
+// Syntax kinds.
 const (
 	// The end of token stream.
 	SyntaxKindEnd SyntaxKind = iota + 1
@@ -292,7 +293,7 @@ const (
 	NSyntaxKinds    = uint(SyntaxKindLast - SyntaxKindFirst + 1)
 )
 
-var _is_grouping = map[SyntaxKind]bool{
+var isGrouping = map[SyntaxKind]bool{
 	SyntaxKindLeftBracket:  true,
 	SyntaxKindLeftBrace:    true,
 	SyntaxKindLeftParen:    true,
@@ -301,12 +302,12 @@ var _is_grouping = map[SyntaxKind]bool{
 	SyntaxKindRightParen:   true,
 }
 
-// Is this a bracket, brace, or parenthesis?
-func (kind SyntaxKind) is_grouping() bool {
-	return _is_grouping[kind]
+// IsGrouping reports whether the node is a bracket, brace, or parenthesis.
+func (kind SyntaxKind) IsGrouping() bool {
+	return isGrouping[kind]
 }
 
-var _is_terminator = map[SyntaxKind]bool{
+var isTerminator = map[SyntaxKind]bool{
 	SyntaxKindEnd:          true,
 	SyntaxKindSemicolon:    true,
 	SyntaxKindRightBrace:   true,
@@ -314,22 +315,22 @@ var _is_terminator = map[SyntaxKind]bool{
 	SyntaxKindRightBracket: true,
 }
 
-// Does this node terminate a preceding expression?
-func (kind SyntaxKind) is_terminator() bool {
-	return _is_terminator[kind]
+// IsTerminator reports whether the node terminates a preceding expression.
+func (kind SyntaxKind) IsTerminator() bool {
+	return isTerminator[kind]
 }
 
-var _is_block = map[SyntaxKind]bool{
+var isBlock = map[SyntaxKind]bool{
 	SyntaxKindCodeBlock:    true,
 	SyntaxKindContentBlock: true,
 }
 
-// Is this a code or content block.
-func (kind SyntaxKind) is_block() bool {
-	return _is_block[kind]
+// IsBlock reports whether the node is a code or content block.
+func (kind SyntaxKind) IsBlock() bool {
+	return isBlock[kind]
 }
 
-var _is_stmt = map[SyntaxKind]bool{
+var isStmt = map[SyntaxKind]bool{
 	SyntaxKindLetBinding:    true,
 	SyntaxKindSetRule:       true,
 	SyntaxKindShowRule:      true,
@@ -337,12 +338,13 @@ var _is_stmt = map[SyntaxKind]bool{
 	SyntaxKindModuleInclude: true,
 }
 
-// Does this node need termination through a semicolon or linebreak?
-func (kind SyntaxKind) is_stmt() bool {
-	return _is_stmt[kind]
+// IsStmt reports whether the node needs termination through a semicolon or
+// linebreak.
+func (kind SyntaxKind) IsStmt() bool {
+	return isStmt[kind]
 }
 
-var _is_keyword = map[SyntaxKind]bool{
+var isKeyword = map[SyntaxKind]bool{
 	SyntaxKindNot:      true,
 	SyntaxKindAnd:      true,
 	SyntaxKindOr:       true,
@@ -365,12 +367,12 @@ var _is_keyword = map[SyntaxKind]bool{
 	SyntaxKindAs:       true,
 }
 
-// Is this node is a keyword.
-func (kind SyntaxKind) is_keyword() bool {
-	return _is_keyword[kind]
+// IsKeyword reports whether the node is a keyword.
+func (kind SyntaxKind) IsKeyword() bool {
+	return isKeyword[kind]
 }
 
-var _is_trivia = map[SyntaxKind]bool{
+var isTrivia = map[SyntaxKind]bool{
 	SyntaxKindShebang:      true,
 	SyntaxKindLineComment:  true,
 	SyntaxKindBlockComment: true,
@@ -378,22 +380,22 @@ var _is_trivia = map[SyntaxKind]bool{
 	SyntaxKindParbreak:     true,
 }
 
-// Whether this kind of node is automatically skipped by the parser in
+// IsTrivia reports whether the node is automatically skipped by the parser in
 // code and math mode.
-func (kind SyntaxKind) is_trivia() bool {
-	return _is_trivia[kind]
+func (kind SyntaxKind) IsTrivia() bool {
+	return isTrivia[kind]
 }
 
-var _is_error = map[SyntaxKind]bool{
+var isError = map[SyntaxKind]bool{
 	SyntaxKindError: true,
 }
 
-// Whether this is an error.
-func (kind SyntaxKind) is_error() bool {
-	return _is_error[kind]
+// IsError reports Whether the node is an error.
+func (kind SyntaxKind) IsError() bool {
+	return isError[kind]
 }
 
-var _name = map[SyntaxKind]string{
+var nameFromKind = map[SyntaxKind]string{
 	SyntaxKindEnd:                "end of tokens",
 	SyntaxKindError:              "syntax error",
 	SyntaxKindShebang:            "shebang",
@@ -530,11 +532,11 @@ var _name = map[SyntaxKind]string{
 	SyntaxKindDestructAssignment: "destructuring assignment expression",
 }
 
-// A human-readable name for the kind.
-func (kind SyntaxKind) name() string {
-	return _name[kind]
+// Name returns a human-readable name for the kind.
+func (kind SyntaxKind) Name() string {
+	return nameFromKind[kind]
 }
 
 func (kind SyntaxKind) String() string {
-	return kind.name()
+	return kind.Name()
 }

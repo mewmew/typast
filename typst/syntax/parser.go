@@ -1069,7 +1069,7 @@ func module_import(p *Parser) {
 // Parses items to import from a module: `a, b, c`.
 func import_items(p *Parser) {
 	m := p.marker()
-	for !p.current().is_terminator() {
+	for !p.current().IsTerminator() {
 		item_marker := p.marker()
 		if !p.eat_if(SyntaxKindIdent) {
 			p.unexpected()
@@ -1088,7 +1088,7 @@ func import_items(p *Parser) {
 			p.wrap(item_marker, SyntaxKindRenamedImportItem)
 		}
 
-		if !p.current().is_terminator() {
+		if !p.current().IsTerminator() {
 			p.expect(SyntaxKindComma)
 		}
 	}
@@ -1232,7 +1232,7 @@ func parenthesized_or_array_or_dict(p *Parser) SyntaxKind {
 			state.kind = option.Some(SyntaxKindDict)
 		}
 
-		for !p.current().is_terminator() {
+		for !p.current().IsTerminator() {
 			if !p.at_set(Set_ARRAY_OR_DICT_ITEM) {
 				p.unexpected()
 				continue
@@ -1241,7 +1241,7 @@ func parenthesized_or_array_or_dict(p *Parser) SyntaxKind {
 			array_or_dict_item(p, state)
 			state.count += 1
 
-			if !p.current().is_terminator() && p.expect(SyntaxKindComma) {
+			if !p.current().IsTerminator() && p.expect(SyntaxKindComma) {
 				state.maybe_just_parens = false
 			}
 		}
@@ -1353,7 +1353,7 @@ func args(p *Parser) {
 			p.assert(SyntaxKindLeftParen)
 
 			seen := make(map[string]bool)
-			for !p.current().is_terminator() {
+			for !p.current().IsTerminator() {
 				if !p.at_set(Set_ARG) {
 					p.unexpected()
 					continue
@@ -1361,7 +1361,7 @@ func args(p *Parser) {
 
 				arg(p, seen)
 
-				if !p.current().is_terminator() {
+				if !p.current().IsTerminator() {
 					p.expect(SyntaxKindComma)
 				}
 			}
@@ -1418,7 +1418,7 @@ func params(p *Parser) {
 		seen := make(map[string]bool)
 		sink := false
 
-		for !p.current().is_terminator() {
+		for !p.current().IsTerminator() {
 			if !p.at_set(Set_PARAM) {
 				p.unexpected()
 				continue
@@ -1426,7 +1426,7 @@ func params(p *Parser) {
 
 			param(p, seen, &sink)
 
-			if !p.current().is_terminator() {
+			if !p.current().IsTerminator() {
 				p.expect(SyntaxKindComma)
 			}
 		}
@@ -1492,7 +1492,7 @@ func destructuring_or_parenthesized(p *Parser, reassignment bool, seen map[strin
 	p.with_nl_mode(&AtNewline_Continue{}, func(p *Parser) {
 		p.assert(SyntaxKindLeftParen)
 
-		for !p.current().is_terminator() {
+		for !p.current().IsTerminator() {
 			if !p.at_set(Set_DESTRUCTURING_ITEM) {
 				p.unexpected()
 				continue
@@ -1501,7 +1501,7 @@ func destructuring_or_parenthesized(p *Parser, reassignment bool, seen map[strin
 			destructuring_item(p, reassignment, seen, &maybe_just_parens, &sink)
 			count += 1
 
-			if !p.current().is_terminator() && p.expect(SyntaxKindComma) {
+			if !p.current().IsTerminator() && p.expect(SyntaxKindComma) {
 				maybe_just_parens = false
 			}
 		}
@@ -1561,7 +1561,7 @@ func destructuring_item(p *Parser, reassignment bool, seen map[string]bool, mayb
 // Parses a leaf in a pattern - either an identifier or an expression
 // depending on whether it's a binding or reassignment pattern.
 func pattern_leaf(p *Parser, reassignment bool, seen map[string]bool, dupe option.Option[string]) {
-	if p.current().is_keyword() {
+	if p.current().IsKeyword() {
 		p.eat_and_get().expected("pattern")
 		return
 	} else if !p.at_set(Set_PATTERN_LEAF) {
@@ -2034,7 +2034,7 @@ func Parser_lex(nodes *vector.Vector[*SyntaxNode], lexer *Lexer, nl_mode AtNewli
 	had_newline := false
 	parbreak := false
 
-	for kind.is_trivia() {
+	for kind.IsTrivia() {
 		if lexer.newline {
 			had_newline = true // Newlines are always trivia.
 		}
@@ -2219,12 +2219,12 @@ func (p *Parser) expect(kind SyntaxKind) bool {
 	at := p.at(kind)
 	if at {
 		p.eat()
-	} else if kind == SyntaxKindIdent && p.token.kind.is_keyword() {
+	} else if kind == SyntaxKindIdent && p.token.kind.IsKeyword() {
 		p.trim_errors()
-		p.eat_and_get().expected(kind.name())
+		p.eat_and_get().expected(kind.Name())
 	} else {
-		p.balanced = p.balanced && !kind.is_grouping()
-		p.expected(kind.name())
+		p.balanced = p.balanced && !kind.IsGrouping()
+		p.expected(kind.Name())
 	}
 	return at
 }
@@ -2254,7 +2254,7 @@ func (p *Parser) after_error() bool {
 	if index >= len(p.nodes) {
 		return false
 	}
-	return p.nodes[index].kind().is_error()
+	return p.nodes[index].kind().IsError()
 }
 
 // Produce an error that the given `thing` was expected at the position
@@ -2279,7 +2279,7 @@ func (p *Parser) hint(hint string) {
 // unexpected.
 func (p *Parser) unexpected() {
 	p.trim_errors()
-	p.balanced = p.balanced && !p.token.kind.is_grouping()
+	p.balanced = p.balanced && !p.token.kind.IsGrouping()
 	p.eat_and_get().unexpected()
 }
 
@@ -2288,7 +2288,7 @@ func (p *Parser) trim_errors() {
 	_end := p.before_trivia()
 	end := uint64(_end)
 	start := end
-	for start > 0 && p.nodes[start-1].kind().is_error() && p.nodes[start-1].is_empty() {
+	for start > 0 && p.nodes[start-1].kind().IsError() && p.nodes[start-1].is_empty() {
 		start--
 	}
 	p.nodes.Drain(ranges.NewRange(start, end))
