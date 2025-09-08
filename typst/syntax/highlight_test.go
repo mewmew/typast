@@ -26,7 +26,7 @@ func test(t *testing.T, text string, want []RangeTag) {
 
 func highlight_tree(tags *vector.Vector[RangeTag], node *LinkedNode) {
 	if tag, ok := highlight(node).Get(); ok {
-		tags.Push(RangeTag{r: node._range(), tag: tag})
+		tags.Push(RangeTag{r: node.Range(), tag: tag})
 	}
 
 	for _, child := range node.children().Children() {

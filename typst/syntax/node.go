@@ -895,7 +895,7 @@ func (link *LinkedNode) get() *SyntaxNode {
 // The byte range of this node in the source file.
 //
 // range
-func (link *LinkedNode) _range() ranges.Range {
+func (link *LinkedNode) Range() ranges.Range {
 	return ranges.NewRange(uint64(link.offset), uint64(link.offset+link.node.len()))
 }
 

@@ -7,24 +7,24 @@ import (
 )
 
 func test_reparse(t *testing.T, prev_str string, _range ranges.Range, with string, incremental bool) {
-	source := Source_detached(prev_str)
-	prev := source.root.clone()
-	r := source.edit(_range, with)
-	found := source.root.clone()
-	expected := Parse(source.text())
+	source := NewDetachedSource(prev_str)
+	prev := source.Root.clone()
+	r := source.Edit(_range, with)
+	found := source.Root.clone()
+	expected := Parse(source.Text())
 	found.synthesize(NewDetachedSpan())
 	expected.synthesize(NewDetachedSpan())
 	// TODO: figure out a better way to compare nodes that string representation comparison.
 	if found.String() != expected.String() {
-		t.Fatalf("reparse mismatch\n\tsource: %v\n\tprevious: %v\n\texpected: %v\n\tgot:      %v", source.text(), prev, expected, found)
+		t.Fatalf("reparse mismatch\n\tsource: %v\n\tprevious: %v\n\texpected: %v\n\tgot:      %v", source.Text(), prev, expected, found)
 	}
 	if incremental {
-		if uint64(len(source.text())) == r.Len() {
-			t.Errorf("should have been incremental\n\tsource: %v\n\trange: %v\n\tlen(source): %v\n\trange.len:   %v", source.text(), r, len(source.text()), r.Len())
+		if uint64(len(source.Text())) == r.Len() {
+			t.Errorf("should have been incremental\n\tsource: %v\n\trange: %v\n\tlen(source): %v\n\trange.len:   %v", source.Text(), r, len(source.Text()), r.Len())
 		}
 	} else {
-		if uint64(len(source.text())) != r.Len() {
-			t.Errorf("shouldn't have been incremental\n\tsource: %v\n\trange: %v\n\tlen(source): %v\n\trange.len:   %v", source.text(), r, len(source.text()), r.Len())
+		if uint64(len(source.Text())) != r.Len() {
+			t.Errorf("shouldn't have been incremental\n\tsource: %v\n\trange: %v\n\tlen(source): %v\n\trange.len:   %v", source.Text(), r, len(source.Text()), r.Len())
 		}
 	}
 }

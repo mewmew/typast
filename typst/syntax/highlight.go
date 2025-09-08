@@ -499,7 +499,7 @@ func highlight_ident(node *LinkedNode) option.Option[Tag] {
 	// Are we directly before an argument list?
 	next_leaf := node.next_leaf()
 	if next, ok := next_leaf.Get(); ok {
-		if uint(node._range().End) == next.offset {
+		if uint(node.Range().End) == next.offset {
 			switch next.node.kind() {
 			case SyntaxKindLeftParen:
 				if parent_kind, ok := next.parent_kind().Get(); ok {

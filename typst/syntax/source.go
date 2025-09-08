@@ -11,115 +11,109 @@ import (
 
 // --- [ Source ] --------------------------------------------------------------
 
-// A source file.
+// Source represents a source file.
 //
-// All line and column indices start at zero, just like byte indices. Only for
-// user-facing display, you should add 1 to them.
+// All line and column indices start at zero, just like byte indices. For
+// user-facing display, add 1 to them.
 //
 // Values of this type are cheap to clone and hash.
 type Source struct {
-	// The id of the source file.
-	id FileID
+	// The ID of the source file.
+	ID FileID
 	// The root node of the file's untyped syntax tree.
-	root *SyntaxNode
+	Root *SyntaxNode
 	// An acceleration structure for conversion of UTF-8, UTF-16 and
 	// line/column indices.
-	lines *Lines
+	Lines *Lines
 }
 
-// Create a new source file.
+// NewSource creates a new source file from an ID and text.
 //
-// new
+// It panics if the text cannot be properly parsed.
 func NewSource(id FileID, text string) *Source {
 	root := Parse(text)
 	if err := root.numberize(id, SpanFull); err != nil {
 		panic(err)
 	}
 	return &Source{
-		id:    id,
-		root:  root,
-		lines: NewLines(text),
+		ID:    id,
+		Root:  root,
+		Lines: NewLines(text),
 	}
 }
 
-// Create a source file without a real id and path, usually for testing.
+// NewDetachedSource creates a source file without a real ID and path,
+// usually for testing.
 //
-// detached
-func Source_detached(text string) *Source {
+// It panics if the text cannot be properly parsed.
+func NewDetachedSource(text string) *Source {
 	id := NewFileID(option.None[*PackageSpec](), NewVirtualPath("main.typ"))
 	return NewSource(id, text)
 }
 
-// The whole source as a string slice.
-func (src *Source) text() string {
-	return src.lines.text
+// Text returns the whole source as a string.
+func (s *Source) Text() string {
+	return s.Lines.text
 }
 
-// Fully replace the source text.
+// Replace fully replaces the source text.
 //
-// This performs a naive (suffix/prefix-based) diff of the old and new text
-// to produce the smallest single edit that transforms old into new and
-// then calls [`edit`](Self::edit) with it.
+// It performs a naive (suffix/prefix-based) diff of the old and new text to
+// produce the smallest single edit that transforms the old source into the new one.
+// The method then calls Edit with this change.
 //
-// Returns the range in the new source that was ultimately reparsed.
-func (src *Source) replace(new string) ranges.Range {
-	_replacement_range, ok := src.lines.replacement_range(new).Get()
+// Replace returns the range in the new source that was ultimately reparsed.
+func (s *Source) Replace(new string) ranges.Range {
+	replacementRange, ok := s.Lines.replacement_range(new).Get()
 	if !ok {
 		return ranges.NewRange(0, 0)
 	}
-	_prefix := _replacement_range.prefix
-	_suffix := _replacement_range.suffix
+	prefix := replacementRange.prefix
+	suffix := replacementRange.suffix
 
-	old := src.text()
-	replace := ranges.NewRange(uint64(_prefix), uint64(uint(len(old))-_suffix))
-	new_range := ranges.NewRange(uint64(_prefix), uint64(uint(len(new))-_suffix))
-	with := new[new_range.Start:new_range.End]
-	return src.edit(replace, with)
+	old := s.Text()
+	replace := ranges.NewRange(uint64(prefix), uint64(uint(len(old))-suffix))
+	newRange := ranges.NewRange(uint64(prefix), uint64(uint(len(new))-suffix))
+	with := new[newRange.Start:newRange.End]
+	return s.Edit(replace, with)
 }
 
-// Edit the source file by replacing the given range.
+// Edit edits the source file by replacing the given range.
 //
-// Returns the range in the new source that was ultimately reparsed.
+// It returns the range in the new source that was ultimately reparsed.
 //
-// The method panics if the `replace` range is out of bounds.
-func (src *Source) edit(replace ranges.Range, with string) ranges.Range {
+// This method panics if the replace range is out of bounds.
+func (s *Source) Edit(replace ranges.Range, with string) ranges.Range {
 	// Update the text and lines.
-	src.lines.edit(replace, with)
+	s.Lines.edit(replace, with)
 
 	// Incrementally reparse the replaced range.
-	return reparse(src.root, src.lines.text, replace, uint(len(with)))
+	return reparse(s.Root, s.Lines.text, replace, uint(len(with)))
 }
 
-// TODO: uncomment Source_find
-
-// Find the node with the given span.
+// Find finds the node with the given span.
 //
-// Returns `None` if the span does not point into this source file.
-//
-// find
-func Source_find(src *Source, span Span) option.Option[*LinkedNode] {
-	return NewLinkedNode(src.root).find(span)
+// It returns None if the span does not point into this source file.
+func (s *Source) Find(span Span) option.Option[*LinkedNode] {
+	return NewLinkedNode(s.Root).find(span)
 }
 
-// TODO: uncomment Source._range
+// Range returns the byte range for the given span in this file.
+//
+// It returns false if the span does not point into this source file.
+//
+// Typically, it's easier to use `WorldExt::Range` instead.
+func (s *Source) Range(span Span) (ranges.Range, bool) {
+	link, ok := s.Find(span).Get()
+	if !ok {
+		return ranges.Range{}, false
+	}
+	return link.Range(), true
+}
 
-// Get the byte range for the given span in this file.
-//
-// Returns `None` if the span does not point into this source file.
-//
-// Typically, it's easier to use `WorldExt::range` instead.
-//
-// range
-//func (src *Source) _range(span Span) option.Option[ranges.Range] {
-//	link, ok := Source_find(src, span).Get()
-//	if !ok {
-//		panic(fmt.Sprintf("unable to find node with span %v", span))
-//	}
-//	return option.Some(link._range())
-//}
-
-func (src *Source) String() string {
-	return fmt.Sprintf("Source(%v)", src.id.VPath())
+// String returns a string representation of the Source.
+func (s *Source) String() string {
+	return fmt.Sprintf("Source(%v)", s.ID.VPath())
 }
 
 // --- [/ Source ] -------------------------------------------------------------
