@@ -2,9 +2,10 @@
 
 package syntax
 
-// The syntax mode of a portion of Typst code.
+// SyntaxMode is a syntax mode of a portion of Typst code.
 type SyntaxMode uint8
 
+// Syntax modes.
 const (
 	// Text and markup, as in the top level.
 	SyntaxModeMarkup SyntaxMode = iota + 1
