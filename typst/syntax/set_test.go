@@ -5,14 +5,14 @@ import (
 )
 
 func TestSet(t *testing.T) {
-	set := NewSyntaxSet().add(SyntaxKindAnd).add(SyntaxKindOr)
-	if !set.contains(SyntaxKindAnd) {
+	set := NewSyntaxSet().Add(SyntaxKindAnd).Add(SyntaxKindOr)
+	if !set.Contains(SyntaxKindAnd) {
 		t.Errorf("expected set %v to contain %v", set, SyntaxKindAnd)
 	}
-	if !set.contains(SyntaxKindOr) {
+	if !set.Contains(SyntaxKindOr) {
 		t.Errorf("expected set %v to contain %v", set, SyntaxKindOr)
 	}
-	if set.contains(SyntaxKindNot) {
+	if set.Contains(SyntaxKindNot) {
 		t.Errorf("expected set %v to not contain %v", set, SyntaxKindNot)
 	}
 }

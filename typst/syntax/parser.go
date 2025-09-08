@@ -48,7 +48,7 @@ func markup(p *Parser, at_start, wrap_trivia bool, stop_set *SyntaxSet) {
 
 // Parses a sequence of markup expressions.
 func markup_exprs(p *Parser, at_start bool, stop_set *SyntaxSet) {
-	if !stop_set.contains(SyntaxKindEnd) {
+	if !stop_set.Contains(SyntaxKindEnd) {
 		panic("stop set missing end token")
 	}
 	if p.had_newline() {
@@ -250,12 +250,12 @@ func math_(p *Parser, stop_set *SyntaxSet) {
 // Parses a sequence of math expressions. Returns the number of expressions
 // parsed.
 func math_exprs(p *Parser, stop_set *SyntaxSet) uint {
-	if !stop_set.contains(SyntaxKindEnd) {
+	if !stop_set.Contains(SyntaxKindEnd) {
 		panic("stop set missing end token")
 	}
 	count := uint(0)
 	for !p.at_set(stop_set) {
-		if p.at_set(Set_MATH_EXPR) {
+		if p.at_set(MathExprSet) {
 			math_expr(p)
 			count++
 		} else {
@@ -478,7 +478,7 @@ func math_delimited(p *Parser) {
 			return
 		}
 
-		if p.at_set(Set_MATH_EXPR) {
+		if p.at_set(MathExprSet) {
 			math_expr(p)
 		} else {
 			p.unexpected()
@@ -656,12 +656,12 @@ func code(p *Parser, stop_set *SyntaxSet) {
 
 // Parses a sequence of code expressions.
 func code_exprs(p *Parser, stop_set *SyntaxSet) {
-	if !stop_set.contains(SyntaxKindEnd) {
+	if !stop_set.Contains(SyntaxKindEnd) {
 		panic("stop set missing end token")
 	}
 	for !p.at_set(stop_set) {
 		p.with_nl_mode(&AtNewline_ContextualContinue{}, func(p *Parser) {
-			if !p.at_set(Set_CODE_EXPR) {
+			if !p.at_set(CodeExprSet) {
 				p.unexpected()
 				return
 			}
@@ -686,8 +686,8 @@ func embedded_code_expr(p *Parser) {
 			return
 		}
 
-		stmt := p.at_set(Set_STMT)
-		at := p.at_set(Set_ATOMIC_CODE_EXPR)
+		stmt := p.at_set(StmtSet)
+		at := p.at_set(AtomicCodeExprSet)
 		code_expr_prec(p, true, 0)
 
 		// Consume error for things like `#12p` or `#"abc\"`.#
@@ -711,7 +711,7 @@ func code_expr(p *Parser) {
 // Parses a code expression with at least the given precedence.
 func code_expr_prec(p *Parser, atomic bool, min_prec uint) {
 	m := p.marker()
-	if !atomic && p.at_set(Set_UNARY_OP) {
+	if !atomic && p.at_set(UnaryOpSet) {
 		op := UnOp_from_kind(p.current()).MustGet()
 		p.eat()
 		code_expr_prec(p, atomic, op.precedence())
@@ -745,7 +745,7 @@ func code_expr_prec(p *Parser, atomic bool, min_prec uint) {
 		}
 
 		var binop option.Option[BinOp]
-		if p.at_set(Set_BINARY_OP) {
+		if p.at_set(BinaryOpSet) {
 			binop = BinOp_from_kind(p.current())
 		} else if min_prec <= BinOp_NotIn.precedence() && p.eat_if(SyntaxKindNot) {
 			if p.at(SyntaxKindIn) {
@@ -1025,7 +1025,7 @@ func for_loop(p *Parser) {
 		node := p.eat_and_get()
 		node.unexpected()
 		node.hint("destructuring patterns must be wrapped in parentheses")
-		if p.at_set(Set_PATTERN) {
+		if p.at_set(PatternSet) {
 			pattern(p, false, seen, option.None[string]())
 		}
 	}
@@ -1122,7 +1122,7 @@ func continue_stmt(p *Parser) {
 func return_stmt(p *Parser) {
 	m := p.marker()
 	p.assert(SyntaxKindReturn)
-	if p.at_set(Set_CODE_EXPR) {
+	if p.at_set(CodeExprSet) {
 		code_expr(p)
 	}
 	p.wrap(m, SyntaxKindFuncReturn)
@@ -1233,7 +1233,7 @@ func parenthesized_or_array_or_dict(p *Parser) SyntaxKind {
 		}
 
 		for !p.current().IsTerminator() {
-			if !p.at_set(Set_ARRAY_OR_DICT_ITEM) {
+			if !p.at_set(ArrayOrDictItemSet) {
 				p.unexpected()
 				continue
 			}
@@ -1354,7 +1354,7 @@ func args(p *Parser) {
 
 			seen := make(map[string]bool)
 			for !p.current().IsTerminator() {
-				if !p.at_set(Set_ARG) {
+				if !p.at_set(ArgSet) {
 					p.unexpected()
 					continue
 				}
@@ -1389,7 +1389,7 @@ func arg(p *Parser, seen map[string]bool) {
 	}
 
 	// Parses a normal positional argument or an argument name.
-	was_at_expr := p.at_set(Set_CODE_EXPR)
+	was_at_expr := p.at_set(CodeExprSet)
 	text := p.current_text()
 	code_expr(p)
 
@@ -1419,7 +1419,7 @@ func params(p *Parser) {
 		sink := false
 
 		for !p.current().IsTerminator() {
-			if !p.at_set(Set_PARAM) {
+			if !p.at_set(ParamSet) {
 				p.unexpected()
 				continue
 			}
@@ -1442,7 +1442,7 @@ func param(p *Parser, seen map[string]bool, sink *bool) {
 
 	// Parses argument sink: `..sink`.
 	if p.eat_if(SyntaxKindDots) {
-		if p.at_set(Set_PATTERN_LEAF) {
+		if p.at_set(PatternLeafSet) {
 			pattern_leaf(p, false, seen, option.Some("parameter"))
 		}
 		p.wrap(m, SyntaxKindSpread)
@@ -1455,7 +1455,7 @@ func param(p *Parser, seen map[string]bool, sink *bool) {
 	}
 
 	// Parses a normal positional parameter or a parameter name.
-	was_at_pat := p.at_set(Set_PATTERN)
+	was_at_pat := p.at_set(PatternSet)
 	pattern(p, false, seen, option.Some("parameter"))
 
 	// Parses a named parameter: `thickness: 12pt`.
@@ -1493,7 +1493,7 @@ func destructuring_or_parenthesized(p *Parser, reassignment bool, seen map[strin
 		p.assert(SyntaxKindLeftParen)
 
 		for !p.current().IsTerminator() {
-			if !p.at_set(Set_DESTRUCTURING_ITEM) {
+			if !p.at_set(DestructuringItemSet) {
 				p.unexpected()
 				continue
 			}
@@ -1522,7 +1522,7 @@ func destructuring_item(p *Parser, reassignment bool, seen map[string]bool, mayb
 
 	// Parse destructuring sink: `..rest`.
 	if p.eat_if(SyntaxKindDots) {
-		if p.at_set(Set_PATTERN_LEAF) {
+		if p.at_set(PatternLeafSet) {
 			pattern_leaf(p, reassignment, seen, option.None[string]())
 		}
 		p.wrap(m, SyntaxKindSpread)
@@ -1535,7 +1535,7 @@ func destructuring_item(p *Parser, reassignment bool, seen map[string]bool, mayb
 	}
 
 	// Parse a normal positional pattern or a destructuring key.
-	was_at_pat := p.at_set(Set_PATTERN)
+	was_at_pat := p.at_set(PatternSet)
 
 	// We must use a full checkpoint here (can't just clone the lexer) because
 	// there may be trivia between the identifier and the colon we need to skip.
@@ -1564,7 +1564,7 @@ func pattern_leaf(p *Parser, reassignment bool, seen map[string]bool, dupe optio
 	if p.current().IsKeyword() {
 		p.eat_and_get().expected("pattern")
 		return
-	} else if !p.at_set(Set_PATTERN_LEAF) {
+	} else if !p.at_set(PatternLeafSet) {
 		p.expected("pattern")
 		return
 	}
@@ -1840,7 +1840,7 @@ func (p *Parser) at(kind SyntaxKind) bool {
 
 // Whether the current token is contained in a [`SyntaxSet`].
 func (p *Parser) at_set(set *SyntaxSet) bool {
-	return set.contains(p.token.kind)
+	return set.Contains(p.token.kind)
 }
 
 // Whether we're at the end of the token stream.
