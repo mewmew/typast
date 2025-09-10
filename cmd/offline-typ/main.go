@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -23,6 +24,8 @@ var (
 	outDir string
 	// projectRootDir specifies the project root directory.
 	projectRootDir string
+	// rawFontDirs specifies a colon-separated list of font directories.
+	rawFontDirs string
 )
 
 func usage() {
@@ -35,6 +38,7 @@ func main() {
 	flag.Usage = usage
 	flag.StringVar(&outDir, "out", "out", "output directory")
 	flag.StringVar(&projectRootDir, "root", "", "project root directory")
+	flag.StringVar(&rawFontDirs, "font-path", "", "colon-separated list of font directories")
 	flag.Parse()
 	if flag.NArg() != 1 {
 		flag.Usage()
@@ -44,6 +48,10 @@ func main() {
 	absTypPath, err := filepath.Abs(typPath)
 	if err != nil {
 		log.Fatalf("unable to get absolute path of %q; %+v", typPath, errors.WithStack(err))
+	}
+	var fontDirs []string
+	if len(rawFontDirs) > 0 {
+		fontDirs = strings.Split(rawFontDirs, ":")
 	}
 
 	// open project root directory.
@@ -77,6 +85,13 @@ func main() {
 	outRoot, err := os.OpenRoot(outDir)
 	if err != nil {
 		log.Fatalf("unable to open output root directory; %+v", errors.WithStack(err))
+	}
+
+	// copy font paths.
+	for _, fontDir := range fontDirs {
+		if err := copyDir(outRoot, fontDir); err != nil {
+			log.Fatalf("unable to copy font directory %q; %+v", fontDir, err)
+		}
 	}
 
 	// rewrite Typst files for offline use.
@@ -607,4 +622,29 @@ func isUnix() bool {
 func exist(root *os.Root, path string) bool {
 	_, err := root.Stat(path)
 	return err == nil
+}
+
+// copyDir copies the given directory to the root file system.
+func copyDir(root *os.Root, dir string) error {
+	visit := func(path string, info fs.FileInfo, err error) error {
+		if info.IsDir() {
+			if err := root.MkdirAll(path, 0o755); err != nil {
+				return errors.WithStack(err)
+			}
+		}
+		if info.Mode().IsRegular() {
+			buf, err := os.ReadFile(path)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			if err := root.WriteFile(path, buf, 0o644); err != nil {
+				return errors.WithStack(err)
+			}
+		}
+		return nil
+	}
+	if err := filepath.Walk(dir, visit); err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
 }
