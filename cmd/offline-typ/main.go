@@ -236,22 +236,20 @@ func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.Packag
 				if args.Kind != syntax.SyntaxKindArgs {
 					continue
 				}
-				for _, c := range args.Children {
-					arg, ok := c.Repr.(*syntax.LeafNode)
-					if !ok {
-						continue
-					}
-					if arg.Kind != syntax.SyntaxKindStr {
-						continue
-					}
-					str, err := strconv.Unquote(arg.Text)
-					if err != nil {
-						panic(err)
-					}
-					path := str
+				if path, ok := findFirstStr(args.Children); ok {
 					localResourcePath := getRelLocalPath(relTypDir, path)
 					localResourcePaths = append(localResourcePaths, localResourcePath)
-					return true // done with inner node
+				}
+				if foundFunc == "bibliography" {
+					if kv, ok := findFirstNamed(args.Children); ok {
+						if kv.Key == "style" {
+							cslPath := kv.Value
+							localResourcePath := getRelLocalPath(relTypDir, cslPath)
+							if exist(projectRoot, localResourcePath) {
+								localResourcePaths = append(localResourcePaths, localResourcePath)
+							}
+						}
+					}
 				}
 			}
 		}
@@ -303,6 +301,77 @@ func getRelLocalPath(relTypDir, path string) string {
 		panic(fmt.Errorf("unable to make Typst file path %q relative; %+v", path, err))
 	}
 	return relLocalTypPath
+}
+
+type KeyValuePair struct {
+	Key   string
+	Value string
+}
+
+// findFirstNamed returns the key-value pair of the first named pair node.
+func findFirstNamed(nodes []*syntax.SyntaxNode) (KeyValuePair, bool) {
+	node, ok := findFirst(nodes, syntax.SyntaxKindNamed)
+	if !ok {
+		return KeyValuePair{}, false
+	}
+	inner, ok := node.Repr.(*syntax.InnerNode)
+	if !ok {
+		return KeyValuePair{}, false
+	}
+	key, ok := findFirstIdent(inner.Children)
+	if !ok {
+		return KeyValuePair{}, false
+	}
+	value, ok := findFirstStr(inner.Children)
+	if !ok {
+		return KeyValuePair{}, false
+	}
+	kv := KeyValuePair{
+		Key:   key,
+		Value: value,
+	}
+	return kv, true
+}
+
+// findFirstIdent returns the name of the first identifier node.
+func findFirstIdent(nodes []*syntax.SyntaxNode) (string, bool) {
+	node, ok := findFirst(nodes, syntax.SyntaxKindIdent)
+	if !ok {
+		return "", false
+	}
+	leaf, ok := node.Repr.(*syntax.LeafNode)
+	if !ok {
+		return "", false
+	}
+	return leaf.Text, true
+}
+
+// findFirstStr returns the unquoted version of the first string literal node.
+func findFirstStr(nodes []*syntax.SyntaxNode) (string, bool) {
+	node, ok := findFirst(nodes, syntax.SyntaxKindStr)
+	if !ok {
+		return "", false
+	}
+	leaf, ok := node.Repr.(*syntax.LeafNode)
+	if !ok {
+		return "", false
+	}
+	text, err := strconv.Unquote(leaf.Text)
+	if err != nil {
+		// TODO: report error?
+		return "", false
+	}
+	return text, true
+}
+
+// findFirst returns the first node of the given kind.
+func findFirst(nodes []*syntax.SyntaxNode, kind syntax.SyntaxKind) (*syntax.SyntaxNode, bool) {
+	for _, node := range nodes {
+		if node.SyntaxKind() == kind {
+			return node, true
+		}
+	}
+	return nil, false
 }
 
 // insertPkgRename inserts a package rename directive (if not already present)
@@ -482,4 +551,10 @@ func isUnix() bool {
 		return true
 	}
 	panic(fmt.Sprintf("support for %v not yet implemented", goos))
+}
+
+// exist reports whether the given file exists within root.
+func exist(root *os.Root, path string) bool {
+	_, err := root.Stat(path)
+	return err == nil
 }
