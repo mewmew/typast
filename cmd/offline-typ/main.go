@@ -111,8 +111,12 @@ func main() {
 }
 
 var (
+	// track libraries queued for rewrite.
+	//
 	// key: "@preview/latex-lookalike:0.1.4"
 	todo = make(map[string]*syntax.PackageSpec)
+	// track rewritten libraries.
+	//
 	// key: "@preview/latex-lookalike:0.1.4"
 	done = make(map[string]*syntax.PackageSpec)
 )
@@ -156,8 +160,16 @@ func rewriteLibs(outRoot *os.Root, specs []*syntax.PackageSpec) error {
 	return nil
 }
 
-// track Typst files (full path) that have been rewritten.
-var typDone = make(map[string]bool)
+var (
+	// track rewritten Typst files.
+	//
+	// key: full path to Typst file.
+	typDone = make(map[string]bool)
+	// track copied resource files.
+	//
+	// key: full path to resource file.
+	resDone = make(map[string]bool)
+)
 
 // rewrite rewrites the given Typst file for offline use.
 func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.PackageSpec, error) {
@@ -362,6 +374,17 @@ func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.Packag
 
 	// Copy local resources.
 	for _, localResourcePath := range localResourcePaths {
+		absResourcePath := filepath.Join(projectRoot.Name(), localResourcePath)
+		if resDone[absResourcePath] {
+			if verbose {
+				log.Printf("skipping %q (already copied)", absResourcePath)
+			}
+			continue
+		}
+		resDone[absResourcePath] = true
+		if verbose {
+			log.Printf("copying %q", localResourcePath)
+		}
 		buf, err := projectRoot.ReadFile(localResourcePath)
 		if err != nil {
 			return nil, errors.WithStack(err)
