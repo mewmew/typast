@@ -271,6 +271,8 @@ func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.Packag
 				// call to image function handled below.
 			case "bibliography":
 				// call to bibliography function handled below.
+			case "plugin":
+				// call to plugin function handled below.
 			default:
 				continue // skip other function calls
 			}
