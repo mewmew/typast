@@ -175,7 +175,9 @@ var (
 func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.PackageSpec, error) {
 	absTypPath := filepath.Join(projectRoot.Name(), relTypPath)
 	if typDone[absTypPath] {
-		log.Printf("skipping %q (already processed)", absTypPath)
+		if verbose {
+			log.Printf("skipping %q (already processed)", absTypPath)
+		}
 		return nil, nil // already processed.
 	}
 	typDone[absTypPath] = true
