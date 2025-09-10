@@ -281,12 +281,14 @@ func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.Packag
 				}
 			}
 			switch foundFunc {
-			case "image":
-				// call to image function handled below.
 			case "bibliography":
 				// call to bibliography function handled below.
+			case "image":
+				// call to image function handled below.
 			case "plugin":
 				// call to plugin function handled below.
+			case "read":
+				// call to read function handled below.
 			default:
 				continue // skip other function calls
 			}
