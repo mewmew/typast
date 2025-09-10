@@ -26,6 +26,8 @@ var (
 	projectRootDir string
 	// rawFontDirs specifies a colon-separated list of font directories.
 	rawFontDirs string
+	// verbose specifies whether to use verbose debug output.
+	verbose bool
 )
 
 func usage() {
@@ -36,6 +38,7 @@ func usage() {
 func main() {
 	// parse command line arguments.
 	flag.Usage = usage
+	flag.BoolVar(&verbose, "v", false, "verbose debug output")
 	flag.StringVar(&outDir, "out", "out", "output directory")
 	flag.StringVar(&projectRootDir, "root", "", "project root directory")
 	flag.StringVar(&rawFontDirs, "font-path", "", "colon-separated list of font directories")
@@ -107,21 +110,33 @@ func main() {
 	fmt.Printf("stored offline version in %q directory\n", outDir)
 }
 
+var (
+	// key: "@preview/latex-lookalike:0.1.4"
+	todo = make(map[string]*syntax.PackageSpec)
+	// key: "@preview/latex-lookalike:0.1.4"
+	done = make(map[string]*syntax.PackageSpec)
+)
+
 // rewriteLibs copies the given libraries to "/libs" and rewrites them for
 // offline use.
 func rewriteLibs(outRoot *os.Root, specs []*syntax.PackageSpec) error {
-	// key: "@preview/latex-lookalike:0.1.4"
-	todo := make(map[string]*syntax.PackageSpec)
-	// key: "@preview/latex-lookalike:0.1.4"
-	done := make(map[string]*syntax.PackageSpec)
 	// fill queue.
 	for _, spec := range specs {
+		if _, ok := done[spec.String()]; ok {
+			if verbose {
+				log.Fatalf("skipping library %q (already processed)")
+			}
+			continue // already processed.
+		}
 		todo[spec.String()] = spec
 	}
 	for {
 		spec, ok := popSpec(todo)
 		if !ok {
 			break
+		}
+		if verbose {
+			log.Printf("rewriting library %q", spec.String())
 		}
 		done[spec.String()] = spec
 		libSpecs, err := copyPackage(outRoot, spec)
@@ -141,8 +156,20 @@ func rewriteLibs(outRoot *os.Root, specs []*syntax.PackageSpec) error {
 	return nil
 }
 
+// track Typst files (full path) that have been rewritten.
+var typDone = make(map[string]bool)
+
 // rewrite rewrites the given Typst file for offline use.
 func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.PackageSpec, error) {
+	absTypPath := filepath.Join(projectRoot.Name(), relTypPath)
+	if typDone[absTypPath] {
+		log.Printf("skipping %q (already processed)", absTypPath)
+		return nil, nil // already processed.
+	}
+	typDone[absTypPath] = true
+	if verbose {
+		log.Printf("rewriting %q", relTypPath)
+	}
 	relTypDir := filepath.Dir(relTypPath)
 	if err := outRoot.MkdirAll(relTypDir, 0o755); err != nil {
 		return nil, errors.WithStack(err)
