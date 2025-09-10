@@ -221,9 +221,19 @@ func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.Packag
 			return true
 		}
 		for i, child := range inner.Children {
-			leaf, ok := child.Repr.(*syntax.LeafNode)
-			if !ok {
-				continue
+			var leaf *syntax.LeafNode
+			switch n := child.Repr.(type) {
+			case *syntax.LeafNode:
+				leaf = n
+			case *syntax.InnerNode:
+				if n.Kind != syntax.SyntaxKindParenthesized {
+					continue
+				}
+				l, ok := findFirst(n.Children, syntax.SyntaxKindStr)
+				if !ok {
+					continue
+				}
+				leaf = l.Repr.(*syntax.LeafNode)
 			}
 			if leaf.Kind != syntax.SyntaxKindStr {
 				continue
