@@ -444,3 +444,14 @@ func (v *VersionBound) String() string {
 	}
 	return out.String()
 }
+
+// UnmarshalText implements encoding.TextUnmarshaler (for toml).
+func (v *VersionBound) UnmarshalText(buf []byte) error {
+	s := string(buf)
+	version, err := ParseVersionBound(s)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	*v = *version
+	return nil
+}
