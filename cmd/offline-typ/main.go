@@ -205,7 +205,7 @@ func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.Packag
 	}
 	cstwalk.Walk(rootNode, visitImports)
 
-	visitImageFunc := func(n any) bool {
+	visitResourceFunc := func(n any) bool {
 		inner, ok := n.(*syntax.InnerNode)
 		if !ok {
 			return true
@@ -255,7 +255,57 @@ func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.Packag
 		}
 		return true
 	}
-	cstwalk.Walk(rootNode, visitImageFunc)
+	cstwalk.Walk(rootNode, visitResourceFunc)
+
+	visitResourceSetRule := func(n any) bool {
+		inner, ok := n.(*syntax.InnerNode)
+		if !ok {
+			return true
+		}
+		switch inner.Kind {
+		case syntax.SyntaxKindSetRule:
+			// parse set rule below.
+		default:
+			return true
+		}
+		var foundFunc string
+		for _, child := range inner.Children {
+			if leaf, ok := child.Repr.(*syntax.LeafNode); ok {
+				if leaf.Kind == syntax.SyntaxKindIdent {
+					foundFunc = leaf.Text
+					continue
+				}
+			}
+			switch foundFunc {
+			case "bibliography":
+				// handle bibliography set rule below.
+			default:
+				continue // skip other function calls
+			}
+			if args, ok := child.Repr.(*syntax.InnerNode); ok {
+				if args.Kind != syntax.SyntaxKindArgs {
+					continue
+				}
+				if path, ok := findFirstStr(args.Children); ok {
+					localResourcePath := getRelLocalPath(relTypDir, path)
+					localResourcePaths = append(localResourcePaths, localResourcePath)
+				}
+				if foundFunc == "bibliography" {
+					if kv, ok := findFirstNamed(args.Children); ok {
+						if kv.Key == "style" {
+							cslPath := kv.Value
+							localResourcePath := getRelLocalPath(relTypDir, cslPath)
+							if exist(projectRoot, localResourcePath) {
+								localResourcePaths = append(localResourcePaths, localResourcePath)
+							}
+						}
+					}
+				}
+			}
+		}
+		return true
+	}
+	cstwalk.Walk(rootNode, visitResourceSetRule)
 
 	// Convert local Typst files.
 	for _, localTypPath := range localTypPaths {
