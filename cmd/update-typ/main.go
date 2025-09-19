@@ -500,30 +500,32 @@ func getPackageDir(spec *syntax.PackageSpec) (string, error) {
 // @local and @preview namespaces.
 func getPackagesDirs() []string {
 	var packagesDirs []string
+
+	// Typst universe 'packages' repo.
+	if len(universeDir) > 0 {
+		packagesDir := filepath.Join(universeDir, "packages", "preview")
+		packagesDirs = append(packagesDirs, packagesDir)
+	}
+
 	switch {
 	// TODO: add support for Windows and Mac.
 	case isUnix():
-		// ~/.local/share
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			panic(err)
-		}
-		rootDir := filepath.Join(homeDir, ".local", "share")
-		packagesDir := filepath.Join(rootDir, "typst", "packages", "local")
-		packagesDirs = append(packagesDirs, packagesDir)
-
 		// ~/.cache
 		cacheDir, err := os.UserCacheDir()
 		if err != nil {
 			panic(err)
 		}
-		rootDir = cacheDir
-		packagesDir = filepath.Join(rootDir, "typst", "packages", "preview")
+		rootDir := cacheDir
+		packagesDir := filepath.Join(rootDir, "typst", "packages", "preview")
 		packagesDirs = append(packagesDirs, packagesDir)
-	}
-	// Typst universe 'packages' repo.
-	if len(universeDir) > 0 {
-		packagesDir := filepath.Join(universeDir, "packages", "preview")
+
+		// ~/.local/share
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			panic(err)
+		}
+		rootDir = filepath.Join(homeDir, ".local", "share")
+		packagesDir = filepath.Join(rootDir, "typst", "packages", "local")
 		packagesDirs = append(packagesDirs, packagesDir)
 	}
 	return packagesDirs
