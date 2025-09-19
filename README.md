@@ -37,6 +37,47 @@ Screenshot of example usage, where all the dependencies (Typst packages) and res
 
 ![Example use of offline-typ](example/offline-typ.png)
 
+## update-typ tool
+
+The [`update-typ`](cmd/update-typ) tool updates dependencies in Typst files.
+
+All Typst files used by a project are rewritten to use the latest version of each dependency (imported package).
+
+If old versions are identified in transitive dependencies, a warning is emitted so the upstream package author can be notified.
+
+### Install
+
+```bash
+go install github.com/mewmew/typast/cmd/update-typ@latest
+```
+
+### Usage
+
+Example usage:
+```bash
+# Rewrite report.typ to use the latest version of imported packages.
+#
+# Output stored in "foo/" directory.
+update-typ -out foo report.typ
+
+# Rewrite report.typ to use the latest version of imported packages.
+#
+# Typst files are rewritten "in place".
+update-typ -i report.typ
+```
+
+Example diff:
+```diff
+-#import "@preview/hallon:0.1.0": subfigure
++#import "@preview/hallon:0.1.2": subfigure
+```
+
+### Screenshot
+
+Screenshot of example usage, where all the dependencies (Typst packages) are updated to their latest version.
+
+![Example use of update-typ](example/update-typ.png)
+
 ## parse-typ tool
 
 The [`parse-typ`](cmd/parse-typ) tool parses and prints the CST (Concrete Syntax Tree) of Typst files.
