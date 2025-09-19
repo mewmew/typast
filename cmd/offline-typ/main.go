@@ -128,7 +128,7 @@ func rewriteLibs(outRoot *os.Root, specs []*syntax.PackageSpec) error {
 	for _, spec := range specs {
 		if _, ok := done[spec.String()]; ok {
 			if verbose {
-				log.Fatalf("skipping library %q (already processed)")
+				log.Printf("skipping library %q (already processed)", spec.String())
 			}
 			continue // already processed.
 		}
