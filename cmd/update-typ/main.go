@@ -24,6 +24,8 @@ func init() {
 }
 
 var (
+	// inplace specifies whether to edit files in place.
+	inplace bool
 	// outDir specifies the output directory.
 	outDir string
 	// projectRootDir specifies the project root directory.
@@ -32,6 +34,8 @@ var (
 	//
 	// https://github.com/typst/packages.git
 	universeDir string
+	// verbose specifies whether to use verbose debug output.
+	verbose bool
 )
 
 func usage() {
@@ -42,6 +46,8 @@ func usage() {
 func main() {
 	// parse command line arguments.
 	flag.Usage = usage
+	flag.BoolVar(&verbose, "v", false, "verbose debug output")
+	flag.BoolVar(&inplace, "i", false, "edit files in place")
 	flag.StringVar(&outDir, "out", "out", "output directory")
 	flag.StringVar(&projectRootDir, "root", "", "project root directory")
 	flag.StringVar(&universeDir, "universe", "", "Typst universe 'packages' repo directory")
@@ -77,16 +83,21 @@ func main() {
 	if err != nil {
 		clog.Fatalf("unable to open project root directory; %+v", errors.WithStack(err))
 	}
-
-	// create output directory.
-	if err := os.MkdirAll(outDir, 0o755); err != nil {
-		clog.Fatalf("%+v", err)
+	if !verbose {
+		clog.SetPathLevel("main", clog.LevelInfo)
+		clog.SetPathLevel("github.com/mewmew/typast", clog.LevelInfo)
 	}
 
 	// open output root directory.
-	outRoot, err := os.OpenRoot(outDir)
-	if err != nil {
-		clog.Fatalf("unable to open output root directory; %+v", errors.WithStack(err))
+	outRoot := projectRoot // for in place edit (`-i` flag)
+	if !inplace {
+		if err := os.MkdirAll(outDir, 0o755); err != nil {
+			clog.Fatalf("%+v", err)
+		}
+		outRoot, err = os.OpenRoot(outDir)
+		if err != nil {
+			clog.Fatalf("unable to open output root directory; %+v", errors.WithStack(err))
+		}
 	}
 
 	// rewrite Typst files to update dependencies to their latest version.
@@ -99,7 +110,11 @@ func main() {
 	if err := checkLibs(specs); err != nil {
 		clog.Fatalf("%+v", err)
 	}
-	clog.Infof("stored updated version in %q directory", outDir)
+	if inplace {
+		clog.Infof("stored updated version in place")
+	} else {
+		clog.Infof("stored updated version in %q directory", outDir)
+	}
 }
 
 var (
@@ -217,9 +232,9 @@ func findOldVersions(rootNode *syntax.SyntaxNode, relTypPath string, libName str
 				specs = append(specs, spec)
 				if newSpec, ok := latestSpec(spec); ok {
 					if len(libName) > 0 {
-						clog.Infof("in library %q, %q need update: new version %q (old %q)", libName, relTypPath, newSpec, spec)
+						clog.Infof("in library %q, update needed for %q:\n\tnew version %q\n\told version %q", libName, relTypPath, newSpec, spec)
 					} else {
-						clog.Infof("updated %q: new version %q (old %q)", relTypPath, newSpec, spec)
+						clog.Infof("updated %q:\n\tnew version %q\n\told version %q", relTypPath, newSpec, spec)
 						leaf.Text = strconv.Quote(newSpec.String())
 					}
 				}
