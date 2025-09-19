@@ -101,19 +101,25 @@ func main() {
 	}
 
 	// rewrite Typst files to update dependencies to their latest version.
-	specs, err := rewrite(outRoot, projectRoot, typPath)
+	specs, updatedProject, err := rewrite(outRoot, projectRoot, typPath)
 	if err != nil {
 		clog.Fatalf("%+v", err)
 	}
 
 	// check for and report old transitive dependencies.
-	if err := checkLibs(specs); err != nil {
+	updatedLibs, err := checkLibs(specs)
+	if err != nil {
 		clog.Fatalf("%+v", err)
 	}
-	if inplace {
-		clog.Infof("stored updated version in place")
-	} else {
-		clog.Infof("stored updated version in %q directory", outDir)
+	if updatedProject {
+		if inplace {
+			clog.Infof("updated project Typst files in place")
+		} else {
+			clog.Infof("updated project Typst files stored in %q directory", outDir)
+		}
+	}
+	if updatedLibs {
+		clog.Infof("update needed for transitive dependencies")
 	}
 }
 
@@ -126,36 +132,39 @@ var (
 
 // rewrite rewrites the given Typst file to update dependencies to their latest
 // version.
-func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.PackageSpec, error) {
+func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.PackageSpec, bool, error) {
 	// check if already processed.
 	absTypPath := filepath.Join(projectRoot.Name(), relTypPath)
 	if typDone[absTypPath] {
 		clog.Debugf("skipping %q (already processed)", absTypPath)
-		return nil, nil // already processed.
+		return nil, false, nil // already processed.
 	}
 	typDone[absTypPath] = true
 
 	// create output directory if needed.
-	clog.Debugf("rewriting %q", relTypPath)
+	clog.Debugf("processing %q", relTypPath)
 	relTypDir := filepath.Dir(relTypPath)
 	if err := outRoot.MkdirAll(relTypDir, 0o755); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, false, errors.WithStack(err)
 	}
 
 	// parse Typst source.
 	rootNode, err := parse(projectRoot, relTypPath)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, false, errors.WithStack(err)
 	}
 
 	// Check for old versions of dependencies.
-	specs, localTypPaths := findOldVersions(rootNode, relTypPath, "")
+	specs, updated, localTypPaths := findOldVersions(rootNode, relTypPath, "")
 
 	// Rewrite local Typst files.
 	for _, localTypPath := range localTypPaths {
-		localSpecs, err := rewrite(outRoot, projectRoot, localTypPath)
+		localSpecs, _updated, err := rewrite(outRoot, projectRoot, localTypPath)
 		if err != nil {
-			return nil, errors.WithStack(err)
+			return nil, false, errors.WithStack(err)
+		}
+		if _updated {
+			updated = true
 		}
 		specs = append(specs, localSpecs...)
 	}
@@ -164,17 +173,18 @@ func rewrite(outRoot, projectRoot *os.Root, relTypPath string) ([]*syntax.Packag
 	out := &bytes.Buffer{}
 	syntax.PrintNode(out, rootNode)
 	if err := outRoot.WriteFile(relTypPath, out.Bytes(), 0o644); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, false, errors.WithStack(err)
 	}
 
-	return specs, nil
+	return specs, updated, nil
 }
 
 // findOldVersions updates the import statements of dependencies used by the
 // given CST to their latest version. It returns a list of package imports left
 // to check for new version of dependencies and a list of local Typst files to
-// process.
-func findOldVersions(rootNode *syntax.SyntaxNode, relTypPath string, libName string) ([]*syntax.PackageSpec, []string) {
+// process. The boolean return value indicates whether a version was updated.
+func findOldVersions(rootNode *syntax.SyntaxNode, relTypPath string, libName string) ([]*syntax.PackageSpec, bool, []string) {
+	updated := false
 	relTypDir := filepath.Dir(relTypPath)
 	var (
 		// package imports to check for new versions of dependencies.
@@ -237,6 +247,7 @@ func findOldVersions(rootNode *syntax.SyntaxNode, relTypPath string, libName str
 						clog.Infof("updated %q:\n\tnew version %q\n\told version %q", relTypPath, newSpec, spec)
 						leaf.Text = strconv.Quote(newSpec.String())
 					}
+					updated = true
 				}
 				return true // done with inner node
 			case syntax.SyntaxKindModuleInclude:
@@ -249,7 +260,7 @@ func findOldVersions(rootNode *syntax.SyntaxNode, relTypPath string, libName str
 		return true
 	}
 	cstwalk.Walk(rootNode, visitImports)
-	return specs, localTypPaths
+	return specs, updated, localTypPaths
 }
 
 var (
@@ -263,8 +274,9 @@ var (
 	done = make(map[string]*syntax.PackageSpec)
 )
 
-// checkLibs checks for and reports old transitive dependencies.
-func checkLibs(specs []*syntax.PackageSpec) error {
+// checkLibs checks for and reports old transitive dependencies. The boolean
+// return value indicates that a new version was available.
+func checkLibs(specs []*syntax.PackageSpec) (bool, error) {
 	// fill queue.
 	for _, spec := range specs {
 		if _, ok := done[spec.String()]; ok {
@@ -273,6 +285,7 @@ func checkLibs(specs []*syntax.PackageSpec) error {
 		}
 		todo[spec.String()] = spec
 	}
+	updated := false
 	for {
 		spec, ok := popSpec(todo)
 		if !ok {
@@ -280,9 +293,12 @@ func checkLibs(specs []*syntax.PackageSpec) error {
 		}
 		clog.Debugf("processing library %q", spec.String())
 		done[spec.String()] = spec
-		libSpecs, err := checkLibWrapper(spec)
+		libSpecs, _updated, err := checkLibWrapper(spec)
+		if _updated {
+			updated = true
+		}
 		if err != nil {
-			return errors.WithStack(err)
+			return false, errors.WithStack(err)
 		}
 		for _, libSpec := range libSpecs {
 			if _, ok := done[libSpec.String()]; ok {
@@ -294,57 +310,62 @@ func checkLibs(specs []*syntax.PackageSpec) error {
 			todo[libSpec.String()] = libSpec
 		}
 	}
-	return nil
+	return updated, nil
 }
 
 // checkLibWrapper checks the given package for old dependencies (transitively).
-func checkLibWrapper(spec *syntax.PackageSpec) ([]*syntax.PackageSpec, error) {
+// The boolean return value indicates that a new version was available.
+func checkLibWrapper(spec *syntax.PackageSpec) ([]*syntax.PackageSpec, bool, error) {
 	packageDir, err := getPackageDir(spec)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, false, errors.WithStack(err)
 	}
 	projectRoot, err := os.OpenRoot(packageDir)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, false, errors.WithStack(err)
 	}
 	manifest, err := getManifest(spec)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, false, errors.WithStack(err)
 	}
 	relTypPath := manifest.Pkg.Entrypoint
 	return checkLib(projectRoot, relTypPath, spec.String())
 }
 
-// checkLib checks the given package for old dependencies (transitively).
-func checkLib(projectRoot *os.Root, relTypPath, libName string) ([]*syntax.PackageSpec, error) {
+// checkLib checks the given package for old dependencies (transitively). The
+// boolean return value indicates that a new version was available.
+func checkLib(projectRoot *os.Root, relTypPath, libName string) ([]*syntax.PackageSpec, bool, error) {
 	// check if already processed.
 	absTypPath := filepath.Join(projectRoot.Name(), relTypPath)
 	if typDone[absTypPath] {
 		clog.Debugf("skipping %q (already processed)", absTypPath)
-		return nil, nil // already processed.
+		return nil, false, nil // already processed.
 	}
 	typDone[absTypPath] = true
-	clog.Debugf("checking %q", relTypPath)
+	clog.Debugf("processing %q", relTypPath)
 
 	// parse Typst source.
 	rootNode, err := parse(projectRoot, relTypPath)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, false, errors.WithStack(err)
 	}
 
 	// Check for old versions of dependencies.
-	specs, localTypPaths := findOldVersions(rootNode, relTypPath, libName)
+	specs, updated, localTypPaths := findOldVersions(rootNode, relTypPath, libName)
 
 	// Check local Typst files.
 	for _, localTypPath := range localTypPaths {
-		localSpecs, err := checkLib(projectRoot, localTypPath, libName)
+		localSpecs, _updated, err := checkLib(projectRoot, localTypPath, libName)
 		if err != nil {
-			return nil, errors.WithStack(err)
+			return nil, false, errors.WithStack(err)
+		}
+		if _updated {
+			updated = true
 		}
 		specs = append(specs, localSpecs...)
 	}
 
-	return specs, nil
+	return specs, updated, nil
 }
 
 // parse parses the given Typst file.
