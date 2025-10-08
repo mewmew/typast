@@ -1,5 +1,4 @@
-// Parser and syntax tree for Typst.
-
+// Package syntax implements a parser for Typst files.
 package syntax
 
 // SyntaxMode is a syntax mode of a portion of Typst code.
