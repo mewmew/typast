@@ -426,14 +426,14 @@ func math_op(kind SyntaxKind) option.Option[MathOp] {
 			kind:  SyntaxKindMathAttach,
 			stop:  SyntaxKindHat,
 			assoc: Assoc_Right,
-			prec:  3,
+			prec:  2,
 		})
 	case SyntaxKindHat:
 		return option.Some(MathOp{
 			kind:  SyntaxKindMathAttach,
 			stop:  SyntaxKindUnderscore,
 			assoc: Assoc_Right,
-			prec:  3,
+			prec:  2,
 		})
 	case SyntaxKindSlash:
 		return option.Some(MathOp{
