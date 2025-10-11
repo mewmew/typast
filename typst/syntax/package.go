@@ -126,7 +126,7 @@ func (manifest *PackageManifest) Validate(spec *PackageSpec) error {
 		current := CurrentCompilerVersion()
 		if !current.MatchesGE(manifest.Pkg.Compiler) {
 			return errors.Errorf(
-				"package requires typst %v or newer (current version is %v)",
+				"package requires Typst %v or newer (current version is %v)",
 				manifest.Pkg.Compiler,
 				current,
 			)
